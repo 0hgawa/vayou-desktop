@@ -1,0 +1,149 @@
+@import "tailwindcss";
+
+@theme {
+  --color-accent: #ffb300;
+  --color-seek-bg: oklch(0.25 0.005 260);
+  --color-seek-progress: var(--color-accent);
+  --font-sans: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+button { cursor: pointer; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+  color: oklch(0.95 0.005 260);
+  font-family: var(--font-sans);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ctrl-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+.ctrl-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+}
+
+.seek-track {
+  position: relative;
+  height: 4px;
+  background: var(--color-seek-bg);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: height 0.1s ease;
+}
+.seek-track:hover { height: 5px; }
+
+.seek-progress {
+  position: absolute;
+  top: 0; left: 0;
+  height: 100%;
+  background: var(--color-seek-progress);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.seek-thumb {
+  position: absolute;
+  top: 50%;
+  width: 12px; height: 12px;
+  background: white;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.controls-overlay { transition: opacity 200ms ease; }
+.controls-hidden { opacity: 0; pointer-events: none; transition: none; }
+.drag-region { -webkit-app-region: drag; app-region: drag; }
+.no-drag { -webkit-app-region: no-drag; app-region: no-drag; }
+
+
+/* Shared range slider — mirrors VayouSlider on mobile */
+.s-range {
+  appearance: none; height: 4px;
+  background: linear-gradient(
+    to right,
+    var(--color-accent) 0%, var(--color-accent) var(--val, 0%),
+    #2e2e2e var(--val, 0%), #2e2e2e 100%
+  );
+  border-radius: 2px; outline: none; cursor: pointer;
+}
+.s-range::-webkit-slider-thumb {
+  appearance: none; width: 12px; height: 12px; background: var(--color-accent);
+  border-radius: 50%; cursor: pointer; border: none;
+}
+
+/* Bipolar slider: fills from a neutral point outward, white thumb,
+   no fill at neutral. --lo and --hi mark the colored segment in percent. */
+.s-range-bi {
+  appearance: none; height: 4px;
+  background: linear-gradient(
+    to right,
+    #2e2e2e 0%, #2e2e2e var(--lo, 50%),
+    var(--color-accent) var(--lo, 50%), var(--color-accent) var(--hi, 50%),
+    #2e2e2e var(--hi, 50%), #2e2e2e 100%
+  );
+  border-radius: 2px; outline: none; cursor: pointer;
+}
+.s-range-bi::-webkit-slider-thumb {
+  appearance: none; width: 14px; height: 14px; background: white;
+  border-radius: 50%; cursor: pointer; border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  transition: transform 0.12s ease;
+}
+.s-range-bi::-webkit-slider-thumb:hover { transform: scale(1.12); }
+.s-range-bi::-webkit-slider-thumb:active { transform: scale(0.95); }
+
+/* Shared color picker */
+.s-color {
+  appearance: none; width: 32px; height: 24px; border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 4px; cursor: pointer; padding: 0; background: transparent;
+}
+.s-color::-webkit-color-swatch-wrapper { padding: 2px; }
+.s-color::-webkit-color-swatch { border-radius: 2px; border: none; }
+
+/* Toggle switch — mirrors VayouSwitch (44x22 container, 10 track, 18 thumb) */
+.vayou-switch {
+  appearance: none; display: inline-block; width: 44px; height: 22px; background: transparent;
+  position: relative; cursor: pointer; flex-shrink: 0; border: none; padding: 0;
+}
+.vayou-switch::before {
+  content: ""; position: absolute; top: 6px; left: 0; width: 100%; height: 10px;
+  background: rgba(194, 199, 207, 0.4); border-radius: 5px;
+  transition: background 0.25s ease;
+}
+.vayou-switch::after {
+  content: ""; position: absolute; top: 2px; left: 0; width: 18px; height: 18px;
+  background: #c2c7cf; border-radius: 50%;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.25s ease;
+}
+.vayou-switch.on::before { background: color-mix(in srgb, var(--color-accent) 40%, transparent); }
+.vayou-switch.on::after { transform: translateX(26px); background: var(--color-accent); }
+
+/* Text input — used in settings */
+.s-input {
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px; padding: 6px 10px; color: white; font-size: 12px;
+  outline: none; width: 100%;
+}
+.s-input:focus { border-color: var(--color-accent); }
+.s-input::placeholder { color: rgba(255,255,255,0.25); }
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+::-webkit-scrollbar-corner { background: transparent; }

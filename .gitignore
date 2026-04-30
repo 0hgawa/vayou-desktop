@@ -1,0 +1,25 @@
+node_modules/
+build/
+.svelte-kit/
+src-tauri/target/
+src-tauri/gen/
+
+# Bundled platform binaries (libmpv, ffmpeg) — fetched separately
+src-tauri/binaries/*.dll
+src-tauri/binaries/*.exe
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor / tooling
+.claude/settings.local.json
