@@ -1,13 +1,12 @@
 <script lang="ts">
   import { getTracks, selectSubtitle, loadSubtitle, setSubtitleDelay, type TrackInfo } from "$lib/bindings/tracks";
-  import { translateSubtitles } from "$lib/bindings/translate";
   import { searchSubtitles, downloadSubtitle, type SubResult } from "$lib/bindings/opensubtitles";
-  import { listen } from "@tauri-apps/api/event";
   import { open } from "@tauri-apps/plugin-dialog";
   import Select from "./Select.svelte";
   import { t } from "$lib/i18n/index.svelte";
   import { settings, subFonts } from "$lib/stores/settings.svelte";
   import { player } from "$lib/stores/player.svelte";
+  import { translate } from "$lib/stores/translate.svelte";
   import { langName } from "$lib/utils/lang-names";
   import { ICONS } from "$lib/icons";
 
@@ -97,11 +96,6 @@
     downloadingIndex = null;
   }
 
-  let translating = $state(false);
-  let translateProgress = $state(0);
-  let translateTotal = $state(0);
-  let translateError = $state("");
-
   const translateLangs = [
     { code: "pt", name: "Português" }, { code: "en", name: "English" }, { code: "es", name: "Español" },
     { code: "fr", name: "Français" }, { code: "de", name: "Deutsch" }, { code: "it", name: "Italiano" },
@@ -109,16 +103,16 @@
     { code: "ru", name: "Русский" }, { code: "ar", name: "العربية" }, { code: "hi", name: "हिन्दी" },
   ];
 
-  async function handleTranslate() {
-    translating = true; translateProgress = 0; translateTotal = 0; translateError = "";
-    const unlisten = await listen<{ current: number; total: number; done: boolean }>("translate:progress", (e) => {
-      translateProgress = e.payload.current;
-      translateTotal = e.payload.total;
-      if (e.payload.done) { translating = false; refresh(); }
-    });
-    try { await translateSubtitles(settings.translateLang); }
-    catch (e: any) { translateError = String(e); translating = false; }
-    unlisten();
+  // Refresh the track list whenever the store flips `translating` off — the
+  // new translation track only appears in mpv after sub-add completes.
+  $effect(() => {
+    if (!translate.translating) refresh();
+  });
+
+  async function handleOff() {
+    await translate.clear();
+    await refresh();
+    page = "main";
   }
 
   let tracks = $state<TrackInfo[]>([]);
@@ -126,8 +120,10 @@
   let page = $state<"main" | "style" | "search" | "searchLang" | "translateLang">("main");
 
   const noSubSelected = $derived(tracks.length === 0 || tracks.every((t) => !t.selected));
+  const translateOff = $derived(settings.translateLang === "off");
+  const translateActive = $derived(!translateOff && translate.translatedForPath !== null && translate.translatedForPath === player.title);
   const translateLangLabel = $derived(
-    translateLangs.find((l) => l.code === settings.translateLang)?.name ?? "Português",
+    translateOff ? "Off" : (translateLangs.find((l) => l.code === settings.translateLang)?.name ?? settings.translateLang),
   );
   const searchLangLabel = $derived(LANGUAGES.find(([id]) => id === searchLang)?.[1] ?? "All");
 
@@ -143,6 +139,16 @@
   async function handleSelect(id: number) {
     await selectSubtitle(id);
     await refresh();
+    const selectedNow = tracks.find((t) => t.track_type === "sub" && t.selected);
+    // Avoid re-translating if user just clicked our own AUTO track.
+    const clickedAuto = !!translate.translationTrackPath
+      && selectedNow?.external
+      && selectedNow.external_filename === translate.translationTrackPath;
+    if (clickedAuto) return;
+    // Re-translate so switching the source language preserves the translation.
+    if (settings.translateLang !== "off" && id !== -1 && !translate.translating) {
+      translate.translate();
+    }
   }
 
   async function handleLoadExternal() {
@@ -190,6 +196,7 @@
           <span class="flex-1 truncate">{t().disableSubs}</span>
         </button>
         {#each tracks as track}
+          {@const isAuto = !!translate.translationTrackPath && track.external && track.external_filename === translate.translationTrackPath}
           <button
             class="w-full flex items-center px-3 py-2 hover:bg-white/8 text-left {track.selected ? 'text-accent' : 'text-white/70'}"
             onclick={() => handleSelect(track.id)}
@@ -197,10 +204,13 @@
             <svg class="w-4 h-4 shrink-0 mr-2 {track.selected ? 'opacity-100' : 'opacity-0'}" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.check}</svg>
             <span class="flex-1 truncate">
               {track.title || langName(track.lang) || `Track ${track.id}`}
-              {#if track.lang && track.title}
+              {#if track.lang && track.title && !isAuto}
                 <span class="text-white/30 ml-1">[{langName(track.lang)}]</span>
               {/if}
             </span>
+            {#if isAuto}
+              <span class="ml-2 px-1.5 py-0.5 rounded bg-accent/15 text-accent text-[9px] font-semibold tracking-wider uppercase">Auto</span>
+            {/if}
           </button>
         {/each}
       </div>
@@ -227,36 +237,27 @@
       </button>
 
       <!-- Translate row + action button on right -->
-      <div class="w-full flex items-center gap-3 px-3 py-2 text-white/85">
-        <svg class="w-4 h-4 text-white/55" fill="currentColor" viewBox="0 0 24 24"><path d="M12.87 15.07l-2.54-2.51l.03-.03A17.52 17.52 0 0 0 14.07 6H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35C8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5l3.11 3.11l.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>
-        <span class="flex-1 text-left">{t().translate}</span>
-        {#if translating}
-          <span class="text-[11px] text-white/55 tabular-nums">{translateTotal > 0 ? Math.round((translateProgress / translateTotal) * 100) : 0}%</span>
-          <span class="w-3.5 h-3.5 border-2 border-white/20 border-t-accent rounded-full animate-spin"></span>
-        {:else}
-          <button
-            class="w-7 h-7 rounded-md bg-accent/20 text-accent hover:bg-accent/30 flex items-center justify-center transition-colors"
-            onclick={handleTranslate}
-            title={t().translate}
-          >
-            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-          </button>
-        {/if}
-      </div>
-
-      {#if translateError}
-        <div class="px-3 pb-1 text-red-400 text-[11px] truncate" title={translateError}>{translateError}</div>
-      {/if}
-
-      <!-- Translate language picker -->
+      <!-- Translate: single row that opens a dedicated sub-page where each
+           language is itself the action (one click = pick + translate). -->
       <button
         class="w-full flex items-center gap-3 px-3 py-2 hover:bg-white/8 text-white/85"
         onclick={() => page = "translateLang"}
+        disabled={translate.translating}
       >
-        <svg class="w-4 h-4 text-white/55" fill="currentColor" viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2c0 .68.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.987 7.987 0 0 1 5.08 16zm2.95-8H5.08a7.987 7.987 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2c0-.68.07-1.35.16-2h4.68c.09.65.16 1.32.16 2c0 .68-.07 1.34-.16 2zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2c0-.68-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/></svg>
-        <span class="flex-1 text-left">{translateLangLabel}</span>
-        <svg class="w-4 h-4 text-white/30" fill="currentColor" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41L13.17 12l-4.58 4.59L10 18l6-6l-6-6z"/></svg>
+        <svg class="w-4 h-4 text-white/55 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12.87 15.07l-2.54-2.51l.03-.03A17.52 17.52 0 0 0 14.07 6H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35C8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5l3.11 3.11l.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>
+        <span class="flex-1 text-left">{t().translate}</span>
+        {#if translate.translating}
+          <span class="text-[11px] text-white/55 tabular-nums">{translate.total > 0 ? Math.round((translate.progress / translate.total) * 100) : 0}%</span>
+          <span class="w-3.5 h-3.5 border-2 border-white/20 border-t-accent rounded-full animate-spin shrink-0"></span>
+        {:else}
+          <span class="text-[12px] {translateActive ? 'text-accent' : 'text-white/40'}">{translateLangLabel}</span>
+          <svg class="w-4 h-4 text-white/30 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41L13.17 12l-4.58 4.59L10 18l6-6l-6-6z"/></svg>
+        {/if}
       </button>
+
+      {#if translate.error}
+        <div class="px-3 pb-1 text-red-400 text-[11px] truncate" title={translate.error}>{translate.error}</div>
+      {/if}
 
       <!-- Customization (style) -->
       <button
@@ -338,18 +339,37 @@
         </div>
       </div>
     {:else if page === "translateLang"}
-      <!-- Translation language picker -->
+      <!-- Each language IS the action: click translates immediately to that
+           language. Removes the need for a separate "Translate" button. -->
       <div class="flex items-center px-3 py-2">
         <button class="ctrl-btn w-6 h-6 text-xs mr-2 hover:bg-white/10 rounded-md" onclick={() => page = "main"}>←</button>
         <span class="font-medium text-xs">{t().translate}</span>
+        {#if translate.translating}
+          <div class="flex-1"></div>
+          <span class="text-[11px] text-white/55 tabular-nums">{translate.total > 0 ? Math.round((translate.progress / translate.total) * 100) : 0}%</span>
+          <span class="w-3.5 h-3.5 ml-2 border-2 border-white/20 border-t-accent rounded-full animate-spin"></span>
+        {/if}
       </div>
+      {#if translate.error}
+        <div class="px-3 pb-1 text-red-400 text-[11px] truncate" title={translate.error}>{translate.error}</div>
+      {/if}
       <div class="flex-1 overflow-y-auto">
+        <button
+          class="w-full flex items-center gap-3 px-3 py-2 hover:bg-white/8 disabled:opacity-50 text-left {translateOff ? 'text-accent' : 'text-white/60'}"
+          onclick={handleOff}
+          disabled={translate.translating}
+        >
+          <svg class="w-4 h-4 shrink-0 {translateOff ? 'opacity-100 text-accent' : 'opacity-0'}" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.check}</svg>
+          <span class="flex-1">{t().off}</span>
+        </button>
+        <div class="border-t border-white/[0.06] my-1.5 mx-3"></div>
         {#each translateLangs as l}
           <button
-            class="w-full flex items-center gap-3 px-3 py-2 hover:bg-white/8 text-left {settings.translateLang === l.code ? 'text-accent' : 'text-white/80'}"
-            onclick={() => { settings.translateLang = l.code; settings.save(); page = "main"; }}
+            class="w-full flex items-center gap-3 px-3 py-2 hover:bg-white/8 disabled:opacity-50 text-left {settings.translateLang === l.code ? 'text-accent' : 'text-white/85'}"
+            onclick={() => { settings.translateLang = l.code; settings.save(); translate.translate(); page = "main"; }}
+            disabled={translate.translating}
           >
-            <svg class="w-4 h-4 shrink-0 {settings.translateLang === l.code ? 'opacity-100' : 'opacity-0'}" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.check}</svg>
+            <svg class="w-4 h-4 shrink-0 {settings.translateLang === l.code ? 'opacity-100 text-accent' : 'opacity-0'}" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.check}</svg>
             <span class="flex-1">{l.name}</span>
           </button>
         {/each}

@@ -2,7 +2,7 @@ use tauri::State;
 
 use crate::error::AppError;
 use crate::services::tracks::{SubStyle, TrackInfo, TracksService};
-use crate::state::MpvState;
+use crate::state::{AppState, MpvState};
 
 #[tauri::command]
 pub async fn get_tracks(state: State<'_, MpvState>) -> Result<Vec<TrackInfo>, AppError> {
@@ -11,14 +11,36 @@ pub async fn get_tracks(state: State<'_, MpvState>) -> Result<Vec<TrackInfo>, Ap
 }
 
 #[tauri::command]
-pub async fn select_subtitle(id: i64, state: State<'_, MpvState>) -> Result<(), AppError> {
+pub async fn select_subtitle(
+    id: i64,
+    state: State<'_, MpvState>,
+    app_state: State<'_, AppState>,
+) -> Result<(), AppError> {
     TracksService::select_subtitle(state.get()?, id)?;
+    app_state.with(|settings, current_file| {
+        if !settings.remember_selections { return; }
+        if let Some(path) = current_file.as_deref() {
+            settings.set_sub_track(path, if id < 0 { None } else { Some(id) });
+            settings.save().ok();
+        }
+    })?;
     Ok(())
 }
 
 #[tauri::command]
-pub async fn select_audio_track(id: i64, state: State<'_, MpvState>) -> Result<(), AppError> {
+pub async fn select_audio_track(
+    id: i64,
+    state: State<'_, MpvState>,
+    app_state: State<'_, AppState>,
+) -> Result<(), AppError> {
     TracksService::select_audio(state.get()?, id)?;
+    app_state.with(|settings, current_file| {
+        if !settings.remember_selections { return; }
+        if let Some(path) = current_file.as_deref() {
+            settings.set_audio_track(path, if id < 0 { None } else { Some(id) });
+            settings.save().ok();
+        }
+    })?;
     Ok(())
 }
 

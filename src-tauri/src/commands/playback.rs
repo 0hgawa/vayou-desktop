@@ -12,6 +12,7 @@ use crate::state::{set_pending_resume, AppState, MpvState};
 pub async fn init_player(
     app: tauri::AppHandle,
     mpv_state: State<'_, MpvState>,
+    app_state: State<'_, AppState>,
 ) -> Result<(), AppError> {
     // Skip if already initialized (e.g. HMR re-render)
     if mpv_state.is_initialized() {
@@ -44,6 +45,26 @@ pub async fn init_player(
     mpv.observe_property("pause", 3, MPV_FORMAT_FLAG)?;
     mpv.observe_property("volume", 4, MPV_FORMAT_DOUBLE)?;
     mpv.observe_property("media-title", 5, MPV_FORMAT_STRING)?;
+
+    // Apply persisted preferences to mpv.
+    let (alang, slang, vol_boost, embedded_styles, sub_codepage) = app_state.with(|s, _| (
+        s.preferred_audio_lang.clone(),
+        s.preferred_subtitle_lang.clone(),
+        s.volume_boost,
+        s.apply_embedded_styles,
+        s.subtitle_encoding.clone(),
+    ))?;
+    if !alang.is_empty() {
+        mpv.set::<&str>("alang", &alang)?;
+    }
+    if !slang.is_empty() {
+        mpv.set::<&str>("slang", &slang)?;
+    }
+    mpv.set::<&str>("volume-max", if vol_boost { "200" } else { "100" })?;
+    mpv.set::<&str>("sub-ass-override", if embedded_styles { "no" } else { "force" })?;
+    if !sub_codepage.is_empty() {
+        mpv.set::<&str>("sub-codepage", &sub_codepage)?;
+    }
 
     mpv_state.init(mpv)?;
 
@@ -192,10 +213,28 @@ pub async fn frame_back_step(state: State<'_, MpvState>) -> Result<(), AppError>
 }
 
 #[tauri::command]
-pub async fn toggle_ab_loop(
+pub async fn cycle_ab_loop(
     state: State<'_, MpvState>,
 ) -> Result<crate::services::playback::AbLoopState, AppError> {
-    Ok(PlaybackService::set_ab_loop(state.get()?, "toggle")?)
+    Ok(PlaybackService::cycle_ab_loop(state.get()?)?)
+}
+
+#[tauri::command]
+pub async fn set_ab_loop_a(time: Option<f64>) -> Result<(), AppError> {
+    PlaybackService::set_ab_loop_a(time);
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_ab_loop_b(time: Option<f64>) -> Result<(), AppError> {
+    PlaybackService::set_ab_loop_b(time);
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn clear_ab_loop() -> Result<(), AppError> {
+    PlaybackService::clear_ab_loop();
+    Ok(())
 }
 
 #[tauri::command]

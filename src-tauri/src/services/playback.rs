@@ -1,7 +1,9 @@
 use serde::Serialize;
+use tracing::info;
 
 use crate::error::MpvError;
 use crate::mpv::player::MpvPlayer;
+use crate::state;
 
 /// Pure playback logic — no Tauri dependency, fully testable.
 pub struct PlaybackService;
@@ -53,37 +55,47 @@ impl PlaybackService {
         mpv.command(&["frame-back-step"])
     }
 
-    pub fn set_ab_loop(mpv: &MpvPlayer, point: &str) -> Result<AbLoopState, MpvError> {
-        let a = mpv.get_property_string("ab-loop-a").unwrap_or_default();
-        let b = mpv.get_property_string("ab-loop-b").unwrap_or_default();
+    /// Cycle A → B → clear. Snapshots time-pos from mpv directly (no frontend
+    /// latency). Loop enforcement happens in the event loop — see
+    /// `mpv::events::enforce_ab_loop`.
+    pub fn cycle_ab_loop(mpv: &MpvPlayer) -> Result<AbLoopState, MpvError> {
+        let pos = mpv.get::<f64>("time-pos").unwrap_or(0.0);
+        let (a, b) = (state::ab_loop::get_a(), state::ab_loop::get_b());
 
-        match point {
-            "toggle" => {
-                if a == "no" || a.is_empty() {
-                    // Set A point
-                    let pos = mpv.get::<f64>("time-pos").unwrap_or(0.0);
-                    mpv.set::<&str>("ab-loop-a", &pos.to_string())?;
-                    Ok(AbLoopState { a: pos, b: -1.0, active: false })
-                } else if b == "no" || b.is_empty() {
-                    // Set B point
-                    let pos = mpv.get::<f64>("time-pos").unwrap_or(0.0);
-                    mpv.set::<&str>("ab-loop-b", &pos.to_string())?;
-                    let a_val: f64 = a.parse().unwrap_or(0.0);
-                    Ok(AbLoopState { a: a_val, b: pos, active: true })
-                } else {
-                    // Clear both
-                    mpv.set::<&str>("ab-loop-a", "no")?;
-                    mpv.set::<&str>("ab-loop-b", "no")?;
-                    Ok(AbLoopState { a: -1.0, b: -1.0, active: false })
-                }
+        let new_state = match (a, b) {
+            (None, _) => {
+                state::ab_loop::set_a(Some(pos));
+                AbLoopState { a: Some(pos), b: None }
             }
-            "clear" => {
-                mpv.set::<&str>("ab-loop-a", "no")?;
-                mpv.set::<&str>("ab-loop-b", "no")?;
-                Ok(AbLoopState { a: -1.0, b: -1.0, active: false })
+            (Some(a_val), None) if pos > a_val => {
+                state::ab_loop::set_b(Some(pos));
+                AbLoopState { a, b: Some(pos) }
             }
-            _ => Ok(AbLoopState { a: -1.0, b: -1.0, active: false }),
-        }
+            (Some(_), None) => {
+                // pos <= A: replace A rather than creating an invalid B<A range.
+                state::ab_loop::set_a(Some(pos));
+                AbLoopState { a: Some(pos), b: None }
+            }
+            (Some(_), Some(_)) => {
+                state::ab_loop::clear();
+                AbLoopState { a: None, b: None }
+            }
+        };
+
+        info!(a = ?new_state.a, b = ?new_state.b, "ab-loop cycled");
+        Ok(new_state)
+    }
+
+    pub fn set_ab_loop_a(time: Option<f64>) {
+        state::ab_loop::set_a(time);
+    }
+
+    pub fn set_ab_loop_b(time: Option<f64>) {
+        state::ab_loop::set_b(time);
+    }
+
+    pub fn clear_ab_loop() {
+        state::ab_loop::clear();
     }
 
     pub fn get_chapters(mpv: &MpvPlayer) -> Vec<Chapter> {
@@ -156,9 +168,8 @@ pub struct PlaybackState {
 
 #[derive(Serialize)]
 pub struct AbLoopState {
-    pub a: f64,
-    pub b: f64,
-    pub active: bool,
+    pub a: Option<f64>,
+    pub b: Option<f64>,
 }
 
 #[derive(Serialize)]

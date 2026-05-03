@@ -10,6 +10,11 @@ class PlayerStore {
   fullscreen = $state(false);
   controlsVisible = $state(true);
   title = $state("");
+  /** Monotonic counter incremented on every `mpv:file-loaded`. Use this
+   * (not `title`) to detect "is this a new file?" — `title` may change
+   * several times for the same file as mpv discovers metadata, which
+   * triggers spurious effects. */
+  fileEpoch = $state(0);
 
   get progress(): number {
     return this.duration > 0 ? (this.currentTime / this.duration) * 100 : 0;

@@ -7,12 +7,14 @@
   import { t } from "$lib/i18n/index.svelte";
   import {
     initPlayer, openFile, togglePause, seekRelative, setVolume, setSpeed, getPlaybackState,
-    screenshot, frameStep, frameBackStep, toggleAbLoop,
+    screenshot, frameStep, frameBackStep,
   } from "$lib/bindings/playback";
   import { setAspectRatio, getAspectRatio, setVideoZoom, setVideoPan, getVideoZoomPan, resetVideoZoomPan } from "$lib/bindings/video";
   import { toggleFullscreen } from "$lib/bindings/window";
   import { getTracks, selectSubtitle, selectAudioTrack } from "$lib/bindings/tracks";
   import { keybindings } from "$lib/stores/keybindings.svelte";
+  import { abLoop } from "$lib/stores/abLoop.svelte";
+  import { translate } from "$lib/stores/translate.svelte";
   import { playlistNext, playlistPrev } from "$lib/bindings/playlist";
   import TitleBar from "$lib/components/TitleBar.svelte";
   import VideoControls from "$lib/components/VideoControls.svelte";
@@ -34,10 +36,20 @@
 
   let cursorVisible = $state(true);
   let cursorTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Grace period before hiding the controls when the mouse leaves the
+   * window in windowed mode. Long enough that briefly nudging past the
+   * window edge doesn't trigger a hide. */
+  const WINDOWED_HIDE_DELAY_MS = 3000;
+  let windowedHideTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function cancelWindowedHide() {
+    if (windowedHideTimer) { clearTimeout(windowedHideTimer); windowedHideTimer = null; }
+  }
 
   function handleMouseMove(e: MouseEvent) {
     cursorVisible = true;
     if (cursorTimer) clearTimeout(cursorTimer);
+    cancelWindowedHide();
 
     if (!player.fullscreen) { player.controlsVisible = true; return; }
     if (document.querySelector("[data-panel]")) { player.controlsVisible = true; return; }
@@ -46,14 +58,52 @@
   }
 
   function handleMouseLeave() {
-    if (!player.fullscreen && player.playing && !document.querySelector("[data-panel]")) player.controlsVisible = false;
+    if (player.fullscreen) return;
+    if (!player.playing) return;
+    if (document.querySelector("[data-panel]")) return;
+    cancelWindowedHide();
+    windowedHideTimer = setTimeout(() => {
+      // Re-check at fire time — user may have paused or opened a panel
+      // during the grace period.
+      if (player.playing && !document.querySelector("[data-panel]")) {
+        player.controlsVisible = false;
+      }
+    }, WINDOWED_HIDE_DELAY_MS);
   }
   function handleMouseEnter() {
+    cancelWindowedHide();
     if (!player.fullscreen) player.controlsVisible = true;
   }
 
   $effect(() => {
     if (!player.fullscreen) player.controlsVisible = true;
+  });
+
+  /** Auto-translate when a new file loads. Lives here (not in SubtitlePanel)
+   * because the panel may be unmounted when the user opens a new video — the
+   * effect would never fire and the translation would silently not start.
+   *
+   * Triggers off `fileEpoch` (incremented on `mpv:file-loaded`) instead of
+   * `player.title` because mpv emits `media-title` multiple times per load
+   * — once with the filename, again when metadata is parsed — which used
+   * to fire the effect twice for the same file. */
+  let lastTranslatedEpoch = -1;
+  $effect(() => {
+    const epoch = player.fileEpoch;
+    if (epoch === 0 || epoch === lastTranslatedEpoch) return;
+    translate.translationTrackPath = null;
+    if (settings.translateLang === "off") return;
+    // Wait briefly for mpv to register the embedded sub tracks before
+    // querying — otherwise the backend lookup finds no selected sub.
+    const timer = setTimeout(async () => {
+      if (player.fileEpoch !== epoch) return;
+      const tracks = await getTracks().catch(() => []);
+      if (tracks.some((t) => t.track_type === "sub" && t.selected)) {
+        lastTranslatedEpoch = epoch;
+        translate.translate();
+      }
+    }, 800);
+    return () => clearTimeout(timer);
   });
 
   $effect(() => {
@@ -70,7 +120,11 @@
     cleanups.push(listen<number>("mpv:volume", (e) => { player.volume = e.payload; }));
     cleanups.push(listen<string>("mpv:media-title", (e) => { player.title = e.payload; }));
     cleanups.push(listen<void>("mpv:end-file", () => { player.playing = false; }));
-    cleanups.push(listen<void>("mpv:file-loaded", () => { settings.applySubStyle(); }));
+    cleanups.push(listen<void>("mpv:file-loaded", () => {
+      settings.applySubStyle();
+      abLoop.reset();
+      player.fileEpoch++;
+    }));
 
     // Open files from CLI args ("Open with" from Explorer)
     cleanups.push(listen<string[]>("open-files", (e) => {
@@ -148,7 +202,7 @@
     framePrev: () => frameBackStep().catch(() => {}),
     speedUp: () => { player.speed = Math.min(4, +(player.speed + 0.25).toFixed(2)); setSpeed(player.speed); },
     speedDown: () => { player.speed = Math.max(0.25, +(player.speed - 0.25).toFixed(2)); setSpeed(player.speed); },
-    abLoop: () => toggleAbLoop().catch(() => {}),
+    abLoop: () => abLoop.cycle(),
     volumeUp: () => { player.volume = Math.min(100, player.volume + 5); setVolume(player.volume); },
     volumeDown: () => { player.volume = Math.max(0, player.volume - 5); setVolume(player.volume); },
     mute: () => { player.muted = !player.muted; setVolume(player.muted ? 0 : player.volume); },
@@ -235,7 +289,7 @@
   onmouseenter={handleMouseEnter}
   ondblclick={handleDoubleClick}
   oncontextmenu={handleContextMenu}
-  onwheel={(e) => { if ((e.target as HTMLElement).closest("[data-panel]")) return; e.preventDefault(); player.volume = Math.min(100, Math.max(0, player.volume + (e.deltaY < 0 ? 5 : -5))); setVolume(player.volume); }}
+  onwheel={(e) => { if ((e.target as HTMLElement).closest("[data-panel]")) return; e.preventDefault(); const max = settings.volumeBoost ? 200 : 100; player.volume = Math.min(max, Math.max(0, player.volume + (e.deltaY < 0 ? 5 : -5))); setVolume(player.volume); }}
 >
   {#if dragOver}
     <div class="absolute inset-0 z-90 flex items-center justify-center bg-black/60 border-2 border-dashed border-white/30 pointer-events-none">

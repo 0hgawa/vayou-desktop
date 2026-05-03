@@ -33,6 +33,26 @@
 
   $effect(() => { if (visible) refresh(); });
 
+  // Auto-scroll: center on the currently-playing item when the panel opens,
+  // and smoothly track it if the track changes while open.
+  function scrollIfCurrent(node: HTMLElement, current: boolean) {
+    let mounted = false;
+    if (current) {
+      requestAnimationFrame(() => {
+        node.scrollIntoView({ block: "center", behavior: "instant" });
+        mounted = true;
+      });
+    }
+    return {
+      update(c: boolean) {
+        if (c) {
+          node.scrollIntoView({ block: "center", behavior: mounted ? "smooth" : "instant" });
+          mounted = true;
+        }
+      },
+    };
+  }
+
   async function handlePlay(index: number) {
     await playlistPlayIndex(index);
     await refresh();
@@ -99,6 +119,7 @@
     <div class="flex-1 overflow-y-auto max-h-[400px]">
       {#each items as item, i}
         <div
+          use:scrollIfCurrent={item.current}
           class="group w-full flex items-center px-3 py-2 hover:bg-white/8 cursor-default {item.current ? 'bg-white/5' : ''}"
           role="option"
           aria-selected={item.current}

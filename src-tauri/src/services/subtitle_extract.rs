@@ -1,17 +1,55 @@
 use std::fmt::Write;
 use std::path::Path;
-use std::process::Command;
-#[cfg(windows)]
-use std::os::windows::process::CommandExt;
+use std::process::Stdio;
+use std::time::Duration;
+use tokio::io::AsyncReadExt;
+use tokio::process::Command;
 
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+/// Hard cap so ffmpeg can't run forever on a corrupt/huge file. The user
+/// gets an actionable error instead of an indefinite spinner.
+const FFMPEG_TIMEOUT: Duration = Duration::from_secs(60);
+
+/// Probe limits passed to every ffmpeg invocation. Default analyze duration
+/// (~5s of stream) is enough for subtitle stream detection but small enough
+/// that 4K H.265 files don't cost minutes of header scanning.
+const PROBE_FLAGS: &[&str] = &["-probesize", "50M", "-analyzeduration", "5000000"];
 
 fn cmd(program: &str) -> Command {
     let mut c = Command::new(program);
     #[cfg(windows)]
     c.creation_flags(CREATE_NO_WINDOW);
     c
+}
+
+/// Run ffmpeg with our timeout + probe limits, killing the child process on
+/// timeout so we don't leak a runaway extractor. Returns stdout bytes.
+async fn run_ffmpeg(args: &[&str]) -> Result<Vec<u8>, String> {
+    let ffmpeg = find_ffmpeg().ok_or("ffmpeg not found")?;
+    let mut child = cmd(&ffmpeg)
+        .args(PROBE_FLAGS)
+        .args(args)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn()
+        .map_err(|e| format!("ffmpeg spawn failed: {e}"))?;
+
+    let mut stdout = child.stdout.take().ok_or("no stdout")?;
+    let mut buf = Vec::new();
+    let read_fut = async {
+        stdout.read_to_end(&mut buf).await.map_err(|e| format!("read failed: {e}"))?;
+        let _ = child.wait().await;
+        Ok::<Vec<u8>, String>(buf)
+    };
+    match tokio::time::timeout(FFMPEG_TIMEOUT, read_fut).await {
+        Ok(res) => res,
+        Err(_) => {
+            let _ = child.kill().await;
+            Err("ffmpeg timed out — file may be too large or codec unsupported".into())
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -23,15 +61,15 @@ pub struct SubEntry {
 }
 
 /// Extract embedded subtitles via ffmpeg. Uses ASS format if source is ASS, SRT otherwise.
-pub fn extract_from_video(path: &str, mpv_track_id: Option<i64>, is_ass: bool) -> Result<Vec<SubEntry>, String> {
-    let ffmpeg = find_ffmpeg().ok_or("ffmpeg not found")?;
-    let stream = resolve_stream_index(path, mpv_track_id);
+/// mpv numbers subtitle tracks by type starting at 1; ffmpeg's `0:s:N`
+/// indexes the same set starting at 0, so the mapping is just `sid - 1`.
+/// Skipping the previous "list streams to confirm" pre-pass cuts one full
+/// ffmpeg header scan per call — a big win on large H.265 files.
+pub async fn extract_from_video(path: &str, mpv_track_id: Option<i64>, is_ass: bool) -> Result<Vec<SubEntry>, String> {
+    let stream = format!("0:s:{}", mpv_track_id.unwrap_or(1).saturating_sub(1));
     let fmt = if is_ass { "ass" } else { "srt" };
-    let output = cmd(&ffmpeg)
-        .args(["-i", path, "-map", &stream, "-f", fmt, "-"])
-        .output()
-        .map_err(|e| format!("ffmpeg failed: {e}"))?;
-    let text = String::from_utf8_lossy(&output.stdout);
+    let bytes = run_ffmpeg(&["-i", path, "-map", &stream, "-f", fmt, "-"]).await?;
+    let text = String::from_utf8_lossy(&bytes);
     if text.trim().is_empty() { return Err("No subtitle data extracted".into()); }
     let content = text.replace("\r\n", "\n");
     if is_ass { parse_ass_content(&content) } else { parse_srt_content(&content) }
@@ -53,14 +91,10 @@ fn parse_ass_content(content: &str) -> Result<Vec<SubEntry>, String> {
 }
 
 /// Extract ASS header from embedded track via ffmpeg.
-pub fn extract_ass_header_from_video(path: &str, mpv_track_id: i64) -> Result<String, String> {
-    let ffmpeg = find_ffmpeg().ok_or("ffmpeg not found")?;
-    let stream = resolve_stream_index(path, Some(mpv_track_id));
-    let output = cmd(&ffmpeg)
-        .args(["-i", path, "-map", &stream, "-f", "ass", "-"])
-        .output()
-        .map_err(|e| format!("ffmpeg failed: {e}"))?;
-    extract_header_from_ass_content(&String::from_utf8_lossy(&output.stdout))
+pub async fn extract_ass_header_from_video(path: &str, mpv_track_id: i64) -> Result<String, String> {
+    let stream = format!("0:s:{}", mpv_track_id.saturating_sub(1));
+    let bytes = run_ffmpeg(&["-i", path, "-map", &stream, "-f", "ass", "-"]).await?;
+    extract_header_from_ass_content(&String::from_utf8_lossy(&bytes))
 }
 
 /// Extract ASS header from external .ass file.
@@ -110,24 +144,6 @@ pub fn write_srt(entries: &[SubEntry], path: &str) -> Result<(), String> {
 }
 
 // --- Internal ---
-
-fn resolve_stream_index(path: &str, mpv_track_id: Option<i64>) -> String {
-    let id = mpv_track_id.unwrap_or(1);
-    // Parse ffmpeg stderr to count subtitle streams and map mpv id → stream index
-    if let Some(ffmpeg) = find_ffmpeg() {
-        if let Ok(output) = cmd(&ffmpeg).args(["-i", path, "-hide_banner"]).output() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            let mut sub_count: i64 = 0;
-            for line in stderr.lines() {
-                if line.contains("Stream #") && line.contains("Subtitle") {
-                    sub_count += 1;
-                    if sub_count == id { return format!("0:s:{}", sub_count - 1); }
-                }
-            }
-        }
-    }
-    format!("0:s:{}", id.saturating_sub(1))
-}
 
 fn extract_header_from_ass_content(content: &str) -> Result<String, String> {
     let mut header = String::new();
@@ -223,10 +239,20 @@ fn find_ffmpeg() -> Option<String> {
             if p.exists() { return Some(p.to_string_lossy().into()); }
         }
     }
-    if cmd("ffmpeg").arg("-version").output().is_ok() { return Some("ffmpeg".into()); }
+    if ffmpeg_on_path() { return Some("ffmpeg".into()); }
     for base in ["C:/ffmpeg/bin", "C:/Program Files/ffmpeg/bin"] {
         let p = format!("{base}/ffmpeg.exe");
         if Path::new(&p).exists() { return Some(p); }
     }
     None
+}
+
+fn ffmpeg_on_path() -> bool {
+    let mut c = std::process::Command::new("ffmpeg");
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        c.creation_flags(CREATE_NO_WINDOW);
+    }
+    c.arg("-version").output().is_ok()
 }

@@ -1,15 +1,18 @@
-<script lang="ts">
+﻿<script lang="ts">
   import { player } from "$lib/stores/player.svelte";
   import { t } from "$lib/i18n/index.svelte";
   import { langName } from "$lib/utils/lang-names";
   import {
     togglePause, stop, screenshot,
-    toggleAbLoop, getChapters, seekChapter,
+    getChapters, seekChapter,
     setSpeed, type Chapter,
   } from "$lib/bindings/playback";
   import { setAlwaysOnTop } from "$lib/bindings/window";
   import { getTracks, selectSubtitle, selectAudioTrack, type TrackInfo } from "$lib/bindings/tracks";
   import { setAspectRatio, getAspectRatio } from "$lib/bindings/video";
+  import { sleepTimer } from "$lib/stores/sleepTimer.svelte";
+  import { abLoop } from "$lib/stores/abLoop.svelte";
+  import { ICONS } from "$lib/icons";
 
   let {
     show = false,
@@ -34,8 +37,13 @@
   let chapters = $state<Chapter[]>([]);
   let page = $state("main");
   let alwaysOnTop = $state(false);
-  let abLoopLabel = $state("Set A");
   let currentRatio = $state("-1");
+
+  const abLoopLabel = $derived(
+    !abLoop.enabled ? "" :
+    abLoop.a === null ? "On" :
+    abLoop.b === null ? "A" : "A • B"
+  );
 
   const speeds = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 3.0, 4.0];
   const ratios: [string, string][] = [
@@ -58,13 +66,9 @@
   function act(fn: () => void) { fn(); onclose(); }
 
   async function handleScreenshot() { await screenshot().catch(() => {}); onclose(); }
-  async function handleAbLoop() {
-    const state = await toggleAbLoop().catch(() => null);
-    if (state) {
-      if (state.a < 0) abLoopLabel = "Set A";
-      else if (state.b < 0) abLoopLabel = "Set B";
-      else abLoopLabel = "Set A";
-    }
+  function handleAbLoop() {
+    if (abLoop.enabled) abLoop.clear();
+    else abLoop.enable();
     onclose();
   }
   async function handleAlwaysOnTop() { alwaysOnTop = !alwaysOnTop; await setAlwaysOnTop(alwaysOnTop); onclose(); }
@@ -108,13 +112,17 @@
   });
 </script>
 
+{#snippet ctxIcon(svg: string, active: boolean = false)}
+  <svg class="w-4 h-4 mr-2.5 shrink-0 {active ? 'text-accent' : 'text-white/55'}" fill="currentColor" viewBox="0 0 24 24">{@html svg}</svg>
+{/snippet}
+
 <svelte:window onclick={() => show && onclose()} />
 
 {#if show}
   <div
     bind:this={menuEl}
     data-panel
-    class="fixed z-[100] min-w-[200px] py-1 bg-[#1a1a1f]/98 backdrop-blur-md border border-white/10 rounded-lg shadow-2xl text-[13px] text-white/90 select-none"
+    class="fixed z-[100] min-w-[200px] py-2 bg-[#1a1a1f]/98 backdrop-blur-md border border-white/10 rounded-lg shadow-2xl text-[13px] text-white/90 select-none"
     style="left:{posLeft}px;top:{posTop}px;"
     role="menu"
     tabindex="-1"
@@ -122,34 +130,45 @@
     onkeydown={(e) => e.key === "Escape" && (page === "main" ? onclose() : page = "main")}
   >
     {#if page === "main"}
-      <button class="ctx-item" onclick={() => act(onopen)}>{t().openFile}<span class="ctx-key">Ctrl+O</span></button>
-      <button class="ctx-item" onclick={() => act(onopenurl)}>{t().openUrl}<span class="ctx-key">Ctrl+U</span></button>
+      <button class="ctx-item" onclick={() => act(onopen)}>{@render ctxIcon(ICONS.folderOpen)}{t().openFile}<span class="ctx-key">Ctrl+O</span></button>
+      <button class="ctx-item" onclick={() => act(onopenurl)}>{@render ctxIcon(ICONS.link)}{t().openUrl}<span class="ctx-key">Ctrl+U</span></button>
       <div class="ctx-sep"></div>
       <button class="ctx-item" onclick={() => act(() => togglePause())}>
-        {player.playing ? t().pause : t().play}<span class="ctx-key">Space</span>
+        {@render ctxIcon(player.playing ? ICONS.pause : ICONS.play)}{player.playing ? t().pause : t().play}<span class="ctx-key">Space</span>
       </button>
-      <button class="ctx-item" onclick={() => act(() => stop())}>{t().stop}</button>
+      <button class="ctx-item" onclick={() => act(() => stop())}>{@render ctxIcon(ICONS.stop)}{t().stop}</button>
       <div class="ctx-sep"></div>
       {#if subTracks.length > 0}
-        <button class="ctx-item" onclick={() => page = "sub"}>{t().subtitles}<span class="ctx-arrow">▸</span></button>
+        <button class="ctx-item" onclick={() => page = "sub"}>{@render ctxIcon(ICONS.subtitles)}{t().subtitles}<span class="ctx-arrow">▸</span></button>
       {/if}
       {#if audioTracks.length > 0}
-        <button class="ctx-item" onclick={() => page = "audio"}>{t().audio}<span class="ctx-arrow">▸</span></button>
+        <button class="ctx-item" onclick={() => page = "audio"}>{@render ctxIcon(ICONS.volumeUp)}{t().audio}<span class="ctx-arrow">▸</span></button>
       {/if}
-      <button class="ctx-item" onclick={() => page = "speed"}>{t().speed} ({player.speed}x)<span class="ctx-arrow">▸</span></button>
+      <button class="ctx-item" onclick={() => page = "speed"}>{@render ctxIcon(ICONS.speed)}{t().speed} ({player.speed}x)<span class="ctx-arrow">▸</span></button>
       {#if chapters.length > 0}
-        <button class="ctx-item" onclick={() => page = "chapters"}>{t().chapters}<span class="ctx-arrow">▸</span></button>
+        <button class="ctx-item" onclick={() => page = "chapters"}>{@render ctxIcon(ICONS.segment)}{t().chapters}<span class="ctx-arrow">▸</span></button>
       {/if}
-      <button class="ctx-item" onclick={() => page = "aspect"}>{t().aspectRatio}<span class="ctx-arrow">▸</span></button>
+      <button class="ctx-item" onclick={() => page = "aspect"}>{@render ctxIcon(ICONS.aspectRatio)}{t().aspectRatio}<span class="ctx-arrow">▸</span></button>
       <div class="ctx-sep"></div>
-      <button class="ctx-item" onclick={handleAbLoop}>{t().abLoop} ({abLoopLabel})<span class="ctx-key">L</span></button>
-      <button class="ctx-item" onclick={handleScreenshot}>{t().screenshot}<span class="ctx-key">S</span></button>
+      <button class="ctx-item" onclick={handleAbLoop}>
+        {@render ctxIcon(ICONS.repeat, abLoop.enabled)}{t().abLoop}{#if abLoopLabel}<span class="text-accent text-[11px] ml-2 tabular-nums">{abLoopLabel}</span>{/if}
+        <span class="ctx-key">L</span>
+      </button>
+      <button class="ctx-item" onclick={handleScreenshot}>{@render ctxIcon(ICONS.camera)}{t().screenshot}<span class="ctx-key">S</span></button>
       <div class="ctx-sep"></div>
-      <button class="ctx-item" onclick={() => { onclose(); onpanel("info"); }}>{t().mediaInfo}<span class="ctx-key">I</span></button>
-      <button class="ctx-item" onclick={() => { onclose(); onpanel("settings"); }}>{t().settings}</button>
+      <button class="ctx-item" onclick={() => { onclose(); onpanel("info"); }}>{@render ctxIcon(ICONS.info)}{t().mediaInfo}<span class="ctx-key">I</span></button>
+      <button class="ctx-item" onclick={() => { onclose(); onpanel("settings"); }}>{@render ctxIcon(ICONS.settings)}{t().settings}</button>
       <div class="ctx-sep"></div>
+      <button class="ctx-item" onclick={() => page = "sleep"}>
+        {@render ctxIcon(ICONS.timer, sleepTimer.formatted !== null)}{t().sleepTimer}
+        {#if sleepTimer.formatted}
+          <span class="ctx-key text-accent tabular-nums">{sleepTimer.formatted}</span>
+        {:else}
+          <span class="ctx-arrow">▸</span>
+        {/if}
+      </button>
       <button class="ctx-item" onclick={handleAlwaysOnTop}>
-        {alwaysOnTop ? "✓ " : "\u00A0 "}{t().alwaysOnTop}
+        {@render ctxIcon(ICONS.pushPin, alwaysOnTop)}{t().alwaysOnTop}
       </button>
 
     {:else if page === "sub"}
@@ -202,6 +221,24 @@
           {currentRatio === value ? "✓ " : "\u00A0 "}{label}
         </button>
       {/each}
+
+    {:else if page === "sleep"}
+      <button class="ctx-back" onclick={() => page = "main"}>← {t().sleepTimer}</button>
+      <div class="ctx-sep"></div>
+      {#if sleepTimer.formatted}
+        <div class="px-3 py-2 text-center">
+          <div class="text-accent text-lg font-semibold tabular-nums">{sleepTimer.formatted}</div>
+        </div>
+        <button class="ctx-item" onclick={() => { sleepTimer.cancel(); onclose(); }}>
+          ✕ {t().cancel}
+        </button>
+        <div class="ctx-sep"></div>
+      {/if}
+      {#each [5, 10, 15, 20, 30, 45, 60, 90] as min}
+        <button class="ctx-item" onclick={() => { sleepTimer.setTimer(min); onclose(); }}>
+          {sleepTimer.activeMinutes === min ? "✓ " : "\u00A0 "}{min} min
+        </button>
+      {/each}
     {/if}
   </div>
 {/if}
@@ -211,7 +248,7 @@
     display: flex;
     align-items: center;
     width: 100%;
-    padding: 5px 12px;
+    padding: 7px 14px;
     text-align: left;
     background: none;
     border: none;

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { player } from "$lib/stores/player.svelte";
   import { seekAbsolute, getChapters, type Chapter } from "$lib/bindings/playback";
+  import { abLoop } from "$lib/stores/abLoop.svelte";
 
   let trackEl: HTMLDivElement;
   let seeking = $state(false);
@@ -42,6 +43,24 @@
 <div class="w-full cursor-pointer py-2" bind:this={trackEl} onmousedown={onMouseDown}>
   <div class="seek-track">
     <div class="seek-progress" style="width: {player.progress}%"></div>
+    {#if player.duration > 0 && abLoop.a !== null}
+      {@const aPct = (abLoop.a / player.duration) * 100}
+      {@const bPct = abLoop.b !== null ? (abLoop.b / player.duration) * 100 : 100}
+      <div
+        class="absolute top-0 h-full bg-white/25 pointer-events-none"
+        style="left: {aPct}%; width: {bPct - aPct}%"
+      ></div>
+      <div
+        class="absolute top-[-2px] h-[8px] w-[2px] bg-white pointer-events-none"
+        style="left: {aPct}%"
+      ></div>
+      {#if abLoop.b !== null}
+        <div
+          class="absolute top-[-2px] h-[8px] w-[2px] bg-white pointer-events-none"
+          style="left: {bPct}%"
+        ></div>
+      {/if}
+    {/if}
     {#each chapters as ch}
       {#if player.duration > 0 && ch.time > 0}
         <div

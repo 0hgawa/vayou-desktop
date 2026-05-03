@@ -48,7 +48,10 @@ pub fn run() {
             commands::playback::screenshot,
             commands::playback::frame_step,
             commands::playback::frame_back_step,
-            commands::playback::toggle_ab_loop,
+            commands::playback::cycle_ab_loop,
+            commands::playback::set_ab_loop_a,
+            commands::playback::set_ab_loop_b,
+            commands::playback::clear_ab_loop,
             commands::playback::get_chapters,
             commands::playback::seek_chapter,
             commands::playback::open_url,
@@ -95,6 +98,7 @@ pub fn run() {
             commands::media_info::get_media_info,
             // Translate
             commands::translate::translate_subtitles,
+            commands::translate::clear_translation,
             // OpenSubtitles
             commands::opensubtitles::search_subtitles,
             commands::opensubtitles::download_subtitle,

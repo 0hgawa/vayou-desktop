@@ -1,6 +1,7 @@
 <script lang="ts">
   import { setBrightness, setContrast, setSaturation, setVideoZoom, resetVideoZoomPan, toggleDeinterlace } from "$lib/bindings/video";
   import { setAudioNormalization, setAudioEqualizer, resetAudioEqualizer } from "$lib/bindings/audio-fx";
+  import { invoke } from "@tauri-apps/api/core";
   import { settings, subFonts } from "$lib/stores/settings.svelte";
   import { keybindings, KeybindingsStore } from "$lib/stores/keybindings.svelte";
   import { t, setLocale } from "$lib/i18n/index.svelte";
@@ -9,7 +10,7 @@
   import OptionsDialog from "./OptionsDialog.svelte";
 
   type Tab = "general" | "video" | "audio" | "subtitles" | "shortcuts";
-  type Dialog = null | "language" | "speed" | "font";
+  type Dialog = null | "language" | "speed" | "font" | "audioLang" | "subLang" | "subEncoding";
 
   let { visible = $bindable(false) }: { visible: boolean } = $props();
   let tab = $state<Tab>("general");
@@ -42,6 +43,36 @@
     zh: "中文", ru: "Русский", ar: "العربية", hi: "हिन्दी",
   };
 
+  // Common subtitle encodings (mpv `sub-codepage`). Empty = auto-detect.
+  const subEncodings: Array<[string, string]> = [
+    ["utf-8", "UTF-8"],
+    ["cp1252", "Western (Windows-1252)"],
+    ["iso-8859-1", "Western (ISO-8859-1)"],
+    ["cp1251", "Cyrillic (Windows-1251)"],
+    ["iso-8859-2", "Central European (ISO-8859-2)"],
+    ["gbk", "Chinese Simplified (GBK)"],
+    ["big5", "Chinese Traditional (Big5)"],
+    ["shift-jis", "Japanese (Shift-JIS)"],
+    ["euc-kr", "Korean (EUC-KR)"],
+  ];
+
+  // ISO 639-2 codes for mpv alang/slang preference matching.
+  // Empty code = automatic (let mpv pick).
+  const trackLanguages: Array<[string, string]> = [
+    ["eng", "English"],
+    ["por", "Português"],
+    ["spa", "Español"],
+    ["fre", "Français"],
+    ["ger", "Deutsch"],
+    ["ita", "Italiano"],
+    ["jpn", "日本語"],
+    ["kor", "한국어"],
+    ["chi", "中文"],
+    ["rus", "Русский"],
+    ["ara", "العربية"],
+    ["hin", "हिन्दी"],
+  ];
+
   const categories: { id: Tab; get label(): string; icon: string }[] = [
     { id: "general", get label() { return t().general; }, icon: ICONS.tune },
     { id: "video", get label() { return t().video; }, icon: ICONS.movie },
@@ -59,6 +90,44 @@
   const fontOptions = $derived(
     subFonts.map((f) => ({ value: f, label: f, style: `font-family:'${f}'` }))
   );
+  const trackLangOptions = $derived([
+    { value: "", label: t().auto },
+    ...trackLanguages.map(([value, label]) => ({ value, label })),
+  ]);
+  const subEncodingOptions = $derived([
+    { value: "", label: t().auto },
+    ...subEncodings.map(([value, label]) => ({ value, label })),
+  ]);
+
+  function setSubEncoding(code: string) {
+    settings.subtitleEncoding = code;
+    settings.save();
+    invoke("set_mpv_property", {
+      name: "sub-codepage",
+      value: code || "auto",
+    })
+      .then(() => invoke("mpv_command", { args: ["sub-reload"] }))
+      .catch(() => {});
+  }
+  function subEncodingDisplay(code: string): string {
+    if (!code) return t().auto;
+    return subEncodings.find(([c]) => c === code)?.[1] ?? code;
+  }
+
+  function setPreferredAudio(code: string) {
+    settings.preferredAudioLang = code;
+    settings.save();
+    invoke("set_mpv_property", { name: "alang", value: code }).catch(() => {});
+  }
+  function setPreferredSub(code: string) {
+    settings.preferredSubtitleLang = code;
+    settings.save();
+    invoke("set_mpv_property", { name: "slang", value: code }).catch(() => {});
+  }
+  function langDisplay(code: string): string {
+    if (!code) return t().auto;
+    return trackLanguages.find(([c]) => c === code)?.[1] ?? code;
+  }
 
   function setLang(code: string) {
     settings.language = code;
@@ -69,9 +138,20 @@
     brightness = 0; contrast = 0; saturation = 0; zoom = 0;
     setBrightness(0); setContrast(0); setSaturation(0); resetVideoZoomPan();
   }
-  function applyEq() { setAudioEqualizer(eqBands).catch(() => {}); }
+  function applyEq() {
+    if (settings.equalizerEnabled) setAudioEqualizer(eqBands).catch(() => {});
+  }
   function resetEq() { eqBands = [0, 0, 0, 0, 0]; resetAudioEqualizer(); }
   function setPreset(name: string) { eqBands = [...eqPresets[name]]; applyEq(); }
+  function toggleEq() {
+    settings.equalizerEnabled = !settings.equalizerEnabled;
+    settings.save();
+    if (settings.equalizerEnabled) {
+      setAudioEqualizer(eqBands).catch(() => {});
+    } else {
+      resetAudioEqualizer();
+    }
+  }
 
   function resetAll() {
     settings.resetAll();
@@ -158,11 +238,11 @@
           <SettingRow icon={ICONS.volumeUp} title={t().defaultVolume} value="{settings.volume}%">
             {#snippet below()}
               <input
-                type="range" min="0" max="100"
+                type="range" min="0" max={settings.volumeBoost ? 200 : 100}
                 bind:value={settings.volume}
                 oninput={() => settings.save()}
                 class="s-range w-full"
-                style="--val: {settings.volume}%"
+                style="--val: {(settings.volume / (settings.volumeBoost ? 200 : 100)) * 100}%"
               />
             {/snippet}
           </SettingRow>
@@ -172,6 +252,28 @@
             title={t().defaultSpeed}
             value="{settings.speed}x"
             onclick={() => (dialog = "speed")}
+          >
+            {#snippet trailing()}
+              <svg class="w-4 h-4 text-white/30" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.chevronRight}</svg>
+            {/snippet}
+          </SettingRow>
+
+          <SettingRow
+            icon={ICONS.volumeUp}
+            title={t().preferredAudio}
+            value={langDisplay(settings.preferredAudioLang)}
+            onclick={() => (dialog = "audioLang")}
+          >
+            {#snippet trailing()}
+              <svg class="w-4 h-4 text-white/30" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.chevronRight}</svg>
+            {/snippet}
+          </SettingRow>
+
+          <SettingRow
+            icon={ICONS.subtitles}
+            title={t().preferredSubtitle}
+            value={langDisplay(settings.preferredSubtitleLang)}
+            onclick={() => (dialog = "subLang")}
           >
             {#snippet trailing()}
               <svg class="w-4 h-4 text-white/30" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.chevronRight}</svg>
@@ -195,6 +297,16 @@
           >
             {#snippet trailing()}
               <span class="vayou-switch" class:on={settings.autoPlay}></span>
+            {/snippet}
+          </SettingRow>
+
+          <SettingRow
+            icon={ICONS.check}
+            title={t().rememberSelections}
+            onclick={() => { settings.rememberSelections = !settings.rememberSelections; settings.save(); }}
+          >
+            {#snippet trailing()}
+              <span class="vayou-switch" class:on={settings.rememberSelections}></span>
             {/snippet}
           </SettingRow>
 
@@ -249,6 +361,26 @@
 
         {:else if tab === "audio"}
           <SettingRow
+            icon={ICONS.volumeUp}
+            title={t().volumeBoost}
+            value="200%"
+            onclick={() => {
+              settings.volumeBoost = !settings.volumeBoost;
+              settings.save();
+              const max = settings.volumeBoost ? 200 : 100;
+              invoke("set_mpv_property", { name: "volume-max", value: String(max) }).catch(() => {});
+              if (!settings.volumeBoost && settings.volume > 100) {
+                settings.volume = 100;
+                invoke("set_volume", { volume: 100 }).catch(() => {});
+              }
+            }}
+          >
+            {#snippet trailing()}
+              <span class="vayou-switch" class:on={settings.volumeBoost}></span>
+            {/snippet}
+          </SettingRow>
+
+          <SettingRow
             icon={ICONS.graphicEq}
             title={t().normalization}
             onclick={() => { normEnabled = !normEnabled; setAudioNormalization(normEnabled); }}
@@ -260,10 +392,13 @@
 
           <div class="px-4 pt-4 pb-2 flex items-center justify-between">
             <span class="text-[11px] uppercase tracking-wider text-accent font-medium">{t().equalizer}</span>
-            <button class="flex items-center gap-1 text-[11px] text-white/40 hover:text-white/80 transition-colors" onclick={resetEq} title={t().reset}>
-              <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.restartAlt}</svg>
-              {t().reset}
-            </button>
+            <div class="flex items-center gap-3">
+              <button class="flex items-center gap-1 text-[11px] text-white/40 hover:text-white/80 transition-colors" onclick={resetEq} title={t().reset}>
+                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.restartAlt}</svg>
+                {t().reset}
+              </button>
+              <button class="vayou-switch" class:on={settings.equalizerEnabled} onclick={toggleEq} aria-label={t().equalizer}></button>
+            </div>
           </div>
 
           <div class="px-4 pb-2 flex gap-1.5 flex-wrap">
@@ -289,6 +424,34 @@
           </div>
 
         {:else if tab === "subtitles"}
+          <SettingRow
+            icon={ICONS.formatColorText}
+            title={t().subtitleEncoding}
+            value={subEncodingDisplay(settings.subtitleEncoding)}
+            onclick={() => (dialog = "subEncoding")}
+          >
+            {#snippet trailing()}
+              <svg class="w-4 h-4 text-white/30" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.chevronRight}</svg>
+            {/snippet}
+          </SettingRow>
+
+          <SettingRow
+            icon={ICONS.subtitles}
+            title={t().applyEmbeddedStyles}
+            onclick={() => {
+              settings.applyEmbeddedStyles = !settings.applyEmbeddedStyles;
+              settings.save();
+              invoke("set_mpv_property", {
+                name: "sub-ass-override",
+                value: settings.applyEmbeddedStyles ? "no" : "force",
+              }).catch(() => {});
+            }}
+          >
+            {#snippet trailing()}
+              <span class="vayou-switch" class:on={settings.applyEmbeddedStyles}></span>
+            {/snippet}
+          </SettingRow>
+
           <div class="px-4 pt-4 pb-1 flex items-center justify-between">
             <span class="text-[11px] uppercase tracking-wider text-accent font-medium">{t().style}</span>
             <button class="flex items-center gap-1 text-[11px] text-white/40 hover:text-white/80 transition-colors" onclick={() => settings.resetSubStyle()} title={t().reset}>
@@ -430,6 +593,30 @@
       options={fontOptions}
       selected={settings.subFont}
       onselect={(f) => { settings.subFont = f; settings.applySubStyle(); }}
+      onclose={() => (dialog = null)}
+    />
+  {:else if dialog === "audioLang"}
+    <OptionsDialog
+      title={t().preferredAudio}
+      options={trackLangOptions}
+      selected={settings.preferredAudioLang}
+      onselect={setPreferredAudio}
+      onclose={() => (dialog = null)}
+    />
+  {:else if dialog === "subLang"}
+    <OptionsDialog
+      title={t().preferredSubtitle}
+      options={trackLangOptions}
+      selected={settings.preferredSubtitleLang}
+      onselect={setPreferredSub}
+      onclose={() => (dialog = null)}
+    />
+  {:else if dialog === "subEncoding"}
+    <OptionsDialog
+      title={t().subtitleEncoding}
+      options={subEncodingOptions}
+      selected={settings.subtitleEncoding}
+      onselect={setSubEncoding}
       onclose={() => (dialog = null)}
     />
   {/if}

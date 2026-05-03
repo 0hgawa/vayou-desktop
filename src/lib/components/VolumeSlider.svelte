@@ -1,15 +1,18 @@
 <script lang="ts">
   import { player } from "$lib/stores/player.svelte";
   import { setVolume } from "$lib/bindings/playback";
+  import { settings } from "$lib/stores/settings.svelte";
 
   let trackEl: HTMLDivElement;
   let dragging = $state(false);
+
+  const maxVol = $derived(settings.volumeBoost ? 200 : 100);
 
   function handleVolume(e: MouseEvent) {
     if (!trackEl) return;
     const rect = trackEl.getBoundingClientRect();
     if (rect.width === 0) return;
-    const vol = Math.round(Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)) * 100);
+    const vol = Math.round(Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)) * maxVol);
     setVolume(vol);
     player.volume = vol;
     player.muted = vol === 0;
@@ -20,7 +23,7 @@
     setVolume(player.muted ? 0 : player.volume || 100);
   }
 
-  const fillPct = $derived(player.muted ? 0 : player.volume);
+  const fillPct = $derived(player.muted ? 0 : (player.volume / maxVol) * 100);
 </script>
 
 <svelte:window onmouseup={() => (dragging = false)} onmousemove={(e) => dragging && handleVolume(e)} />

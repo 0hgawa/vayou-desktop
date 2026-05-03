@@ -27,11 +27,13 @@ export const frameBackStep = () => invoke<void>("frame_back_step");
 export const openUrl = (url: string) => invoke<void>("open_url", { url });
 
 export interface AbLoopState {
-  a: number;
-  b: number;
-  active: boolean;
+  a: number | null;
+  b: number | null;
 }
-export const toggleAbLoop = () => invoke<AbLoopState>("toggle_ab_loop");
+export const cycleAbLoop = () => invoke<AbLoopState>("cycle_ab_loop");
+export const setAbLoopA = (time: number | null) => invoke<void>("set_ab_loop_a", { time });
+export const setAbLoopB = (time: number | null) => invoke<void>("set_ab_loop_b", { time });
+export const clearAbLoop = () => invoke<void>("clear_ab_loop");
 
 export interface Chapter {
   index: number;

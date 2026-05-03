@@ -8,7 +8,7 @@ use tracing::{debug, info, warn};
 
 use super::player::MpvPlayer;
 use super::types::*;
-use crate::state::{take_pending_resume, AppState};
+use crate::state::{self, take_pending_resume, AppState};
 
 /// Spawn a named background thread that polls mpv events and emits them
 /// as typed Tauri events to the frontend.
@@ -41,9 +41,11 @@ fn run_loop(mpv: &MpvPlayer, app: &tauri::AppHandle) {
 
             MPV_EVENT_FILE_LOADED => {
                 debug!("File loaded");
+                state::ab_loop::clear();
                 if let Some(pos) = take_pending_resume() {
                     let _ = mpv.command(&["seek", &pos.to_string(), "absolute"]);
                 }
+                restore_saved_tracks(mpv, app);
                 let _ = app.emit("mpv:file-loaded", ());
             }
 
@@ -62,12 +64,44 @@ fn run_loop(mpv: &MpvPlayer, app: &tauri::AppHandle) {
             _ => {}
         }
 
+        // AB loop enforcement runs on every loop iteration (~20Hz), not on
+        // time-pos events — those can be coalesced/throttled by mpv to as low
+        // as 1Hz on some containers, which would let the playhead overshoot B
+        // by seconds before triggering.
+        enforce_ab_loop(mpv);
+
         // Save position every 30 seconds
         if last_save.elapsed().as_secs() >= 30 {
             save_position(mpv, app);
             last_save = Instant::now();
         }
     }
+}
+
+/// Manual A-B loop enforcement. Cheap when not armed (2 atomic loads).
+/// When armed, polls time-pos directly from mpv and seeks if past B.
+fn enforce_ab_loop(mpv: &MpvPlayer) {
+    if !state::ab_loop::is_armed() { return; }
+    let Ok(pos) = mpv.get::<f64>("time-pos") else { return };
+    if let Some(target) = state::ab_loop::check(pos) {
+        let _ = mpv.command(&["seek", &target.to_string(), "absolute+exact"]);
+        debug!(target, "ab-loop: seek back to A");
+    }
+}
+
+fn restore_saved_tracks(mpv: &MpvPlayer, app: &tauri::AppHandle) {
+    let Some(state) = app.try_state::<AppState>() else { return };
+    let _ = state.with(|settings, current_file| {
+        if !settings.remember_selections { return; }
+        let Some(path) = current_file.as_ref() else { return };
+        let (audio, sub) = settings.get_saved_tracks(path);
+        if let Some(id) = audio {
+            let _ = mpv.set::<&str>("aid", &id.to_string());
+        }
+        if let Some(id) = sub {
+            let _ = mpv.set::<&str>("sid", &id.to_string());
+        }
+    });
 }
 
 fn save_position(mpv: &MpvPlayer, app: &tauri::AppHandle) {

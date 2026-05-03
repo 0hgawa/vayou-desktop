@@ -6,6 +6,9 @@ export interface TrackInfo {
   title: string;
   lang: string;
   selected: boolean;
+  external: boolean;
+  external_filename: string;
+  codec: string;
 }
 
 export const getTracks = () => invoke<TrackInfo[]>("get_tracks");
@@ -23,5 +26,6 @@ export interface SubStyle {
   border_color: string;
   border_size: number;
   position: number;
+  bold: boolean;
 }
 export const setSubStyle = (style: SubStyle) => invoke<void>("set_sub_style", { style });
