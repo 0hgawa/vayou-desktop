@@ -74,14 +74,20 @@ def make_icon(size: int, color: str, ext: str) -> Image.Image:
     # light grey stops the white squircle from disappearing on a white
     # Explorer background. The eroded mask shrinks the squircle by
     # BORDER_WIDTH_MASTER pixels using 4-connectivity; the difference is
-    # the outer-edge band.
+    # the outer-edge band. Pixels outside the canvas are treated as
+    # transparent so that, where the squircle reaches the canvas edge
+    # (top/bottom/sides), those pixels still get included in the ring
+    # — otherwise the border breaks open at the cardinal extremes.
     eroded = mask.copy()
     for _ in range(BORDER_WIDTH_MASTER):
-        e = eroded.copy()
-        e[1:]    &= eroded[:-1]
-        e[:-1]   &= eroded[1:]
-        e[:, 1:]  &= eroded[:, :-1]
-        e[:, :-1] &= eroded[:, 1:]
+        e = np.zeros_like(eroded)
+        e[1:-1, 1:-1] = (
+            eroded[1:-1, 1:-1]
+            & eroded[:-2, 1:-1]
+            & eroded[2:, 1:-1]
+            & eroded[1:-1, :-2]
+            & eroded[1:-1, 2:]
+        )
         eroded = e
     ring = mask & ~eroded
     arr[ring, :3] = BORDER_COLOR
