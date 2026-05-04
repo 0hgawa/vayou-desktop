@@ -122,8 +122,8 @@
   <div
     bind:this={menuEl}
     data-panel
-    class="fixed z-[100] min-w-[200px] py-2 bg-surface-container-high/98 backdrop-blur-md border border-white/10 rounded-md shadow-2xl text-[13px] text-white/90 select-none"
-    style="left:{posLeft}px;top:{posTop}px;"
+    class="fixed z-[100] min-w-[200px] max-w-[360px] py-2 bg-surface-container-high/98 backdrop-blur-md border border-white/10 rounded-md shadow-2xl text-[13px] text-white/90 select-none overflow-y-auto overflow-x-hidden"
+    style="left:{posLeft}px;top:{posTop}px;max-height:calc(100vh - 16px);"
     role="menu"
     tabindex="-1"
     onclick={(e) => e.stopPropagation()}
