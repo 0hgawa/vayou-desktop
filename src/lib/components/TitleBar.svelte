@@ -7,7 +7,7 @@
 </script>
 
 <div
-  class="fixed top-0 left-0 right-0 z-50 flex items-center h-9 px-3 drag-region controls-overlay bg-gradient-to-b from-black/70 to-transparent"
+  class="titlebar fixed top-0 left-0 right-0 z-50 flex items-center h-9 px-3 drag-region controls-overlay bg-gradient-to-b from-black/70 to-transparent"
   class:controls-hidden={!visible}
 >
     <button onclick={(e) => { e.stopPropagation(); if (menuOpen) { onmenu?.(-1, -1); } else { const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); onmenu?.(r.left, r.bottom + 4); } }} class="ctrl-btn w-7 h-7 no-drag mr-2" title={t().menu}>

@@ -64,6 +64,11 @@ html, body {
 .ctrl-btn:hover {
   background: rgba(255, 255, 255, 0.12);
   color: white;
+  border-radius: 9999px;
+}
+/* TitleBar window controls keep the rectangular hover (Windows convention) */
+.titlebar .ctrl-btn:hover {
+  border-radius: var(--radius-sm);
 }
 
 .seek-track {
