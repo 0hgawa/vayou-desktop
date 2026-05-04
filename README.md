@@ -8,6 +8,8 @@ A native desktop video player built on **libmpv**, with a Svelte 5 frontend and 
 ![Rust](https://img.shields.io/badge/Rust-stable-CE422B)
 ![Platform](https://img.shields.io/badge/platform-Windows-blue)
 
+![Vayou main window](docs/screenshots/main.png)
+
 ---
 
 ## Features
@@ -51,6 +53,15 @@ A native desktop video player built on **libmpv**, with a Svelte 5 frontend and 
 - Custom keybindings (rebindable from settings)
 - 13 UI languages: English, Português, Español, Français, Deutsch, Italiano, 日本語, 한국어, 中文, Русский, العربية, हिन्दी
 - File associations registered for 11 video and 8 audio extensions, each with its own per-extension icon
+
+---
+
+## Screenshots
+
+| Subtitles | Audio |
+|---|---|
+| ![Subtitle panel](docs/screenshots/subtitle.png) | ![Audio settings](docs/screenshots/equalizer.png) |
+| Multi-track subtitles, OpenSubtitles search, on-the-fly translation | 10-band equalizer, normalization, volume boost up to 200% |
 
 ---
 
