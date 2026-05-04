@@ -9,8 +9,10 @@ use tokio::process::Command;
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 /// Hard cap so ffmpeg can't run forever on a corrupt/huge file. The user
-/// gets an actionable error instead of an indefinite spinner.
-const FFMPEG_TIMEOUT: Duration = Duration::from_secs(60);
+/// gets an actionable error instead of an indefinite spinner. 30s is well
+/// above what a healthy extract takes (a 2h SRT track tops out around 5s)
+/// and short enough that wrong track-index mappings surface quickly.
+const FFMPEG_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// Probe limits passed to every ffmpeg invocation. Default analyze duration
 /// (~5s of stream) is enough for subtitle stream detection but small enough
@@ -28,6 +30,8 @@ fn cmd(program: &str) -> Command {
 /// timeout so we don't leak a runaway extractor. Returns stdout bytes.
 async fn run_ffmpeg(args: &[&str]) -> Result<Vec<u8>, String> {
     let ffmpeg = find_ffmpeg().ok_or("ffmpeg not found")?;
+    let started = std::time::Instant::now();
+    tracing::info!(args = ?args, "ffmpeg: starting");
     let mut child = cmd(&ffmpeg)
         .args(PROBE_FLAGS)
         .args(args)
@@ -44,9 +48,17 @@ async fn run_ffmpeg(args: &[&str]) -> Result<Vec<u8>, String> {
         Ok::<Vec<u8>, String>(buf)
     };
     match tokio::time::timeout(FFMPEG_TIMEOUT, read_fut).await {
-        Ok(res) => res,
+        Ok(Ok(buf)) => {
+            tracing::info!(elapsed_ms = started.elapsed().as_millis() as u64, bytes = buf.len(), "ffmpeg: done");
+            Ok(buf)
+        }
+        Ok(Err(e)) => {
+            tracing::warn!(elapsed_ms = started.elapsed().as_millis() as u64, error = %e, "ffmpeg: read error");
+            Err(e)
+        }
         Err(_) => {
             let _ = child.kill().await;
+            tracing::warn!(elapsed_ms = started.elapsed().as_millis() as u64, "ffmpeg: timed out");
             Err("ffmpeg timed out — file may be too large or codec unsupported".into())
         }
     }

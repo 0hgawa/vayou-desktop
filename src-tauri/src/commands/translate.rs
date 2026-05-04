@@ -30,11 +30,8 @@ fn current_run_id() -> &'static AtomicU64 {
 struct TranslateProgress { current: usize, total: usize, done: bool }
 
 /// State of the last translated subtitle: file path we added to mpv plus
-/// the source `sid` it was derived from. Tracking the source `sid` lets us
-/// re-select it after `sub-remove` so the user's next translation request
-/// finds the original sub track again — without it, removing the
-/// translation also wipes the only `selected=true` track and the lookup
-/// fails with "no selected sub track".
+/// the source `sid` it was derived from. Callers use the `source_sid` to
+/// put the user back on a real sub track after the translation is removed.
 struct LastTranslation {
     path: String,
     source_sid: i64,
@@ -46,8 +43,10 @@ fn last_translation() -> &'static Mutex<Option<LastTranslation>> {
 }
 
 /// Removes the previous translation track and returns the source `sid` it
-/// was derived from, so the caller can restore that selection before
-/// looking up the source track again.
+/// was derived from. Callers decide what to do with that sid:
+/// `translate_subtitles` only restores it as a fallback when no other sub
+/// is currently selected; `clear_translation` always restores it so the
+/// user keeps a real sub on screen after disabling translation.
 fn remove_previous_translation(mpv: &MpvPlayer) -> Option<i64> {
     let prev = match last_translation().lock() { Ok(mut g) => g.take(), Err(_) => None }?;
     info!(path = %prev.path, "translate: removing previous translation");
@@ -75,19 +74,28 @@ pub async fn translate_subtitles(
     info!(target_lang = %target_lang, run = my_run, "translate_subtitles: START");
     let mpv = mpv_state.get()?;
 
-    // Remove any previous translation. Restore the source sid it was
-    // derived from so the lookup below finds the original track even when
-    // the translation was the only `selected=true` sub.
-    if let Some(sid) = remove_previous_translation(mpv) {
-        let _ = mpv.set::<&str>("sid", &sid.to_string());
-    }
+    // Remove the previous translation track (if any) and remember the source
+    // it was derived from. We only restore that source as a fallback below —
+    // not unconditionally — so the user can switch to a different sub track
+    // mid-flight and re-translate without first having to disable the
+    // translation manually.
+    let prev_translation_source = remove_previous_translation(mpv);
 
     let video_path = app_state.with(|_, f| f.clone())?
         .ok_or_else(|| AppError::Config("No file playing".into()))?;
     info!(video = %video_path, "translate_subtitles: video resolved");
 
     let tracks = TracksService::get_all(mpv);
-    let sub_track = tracks.iter().find(|t| t.track_type == "sub" && t.selected)
+    let sub_track = tracks.iter()
+        .find(|t| t.track_type == "sub" && t.selected)
+        .or_else(|| {
+            // Nothing is selected after the remove — that only happens when
+            // the translation was the only `selected=true` sub. Restore the
+            // source it came from so the user keeps the same track they had.
+            let sid = prev_translation_source?;
+            mpv.set::<&str>("sid", &sid.to_string()).ok();
+            tracks.iter().find(|t| t.track_type == "sub" && t.id == sid)
+        })
         .ok_or_else(|| {
             warn!(track_count = tracks.len(), sub_count = tracks.iter().filter(|t| t.track_type == "sub").count(), "translate_subtitles: no selected sub track");
             AppError::Config("No subtitle track selected".into())
@@ -173,16 +181,35 @@ pub async fn translate_subtitles(
     }
 
     let mut translated = entries;
+    let mut failed_chunks = 0usize;
     for h in handles {
         let (indices, result) = h.await.map_err(|e| AppError::Config(e.to_string()))?;
-        if let Ok(t) = result {
-            let parts: Vec<&str> = t.split("\n\n").collect();
-            for (j, &idx) in indices.iter().enumerate() {
-                if j < parts.len() && idx < translated.len() {
-                    translated[idx].text = parts[j].trim().to_string();
+        match result {
+            Ok(t) => {
+                let parts: Vec<&str> = t.split("\n\n").collect();
+                for (j, &idx) in indices.iter().enumerate() {
+                    if j < parts.len() && idx < translated.len() {
+                        translated[idx].text = parts[j].trim().to_string();
+                    }
                 }
             }
+            Err(e) => {
+                failed_chunks += 1;
+                warn!(chunk_size = indices.len(), error = %e, "translate_subtitles: chunk failed");
+            }
         }
+    }
+    // If every single chunk failed, the output file would just be the
+    // original subtitle reformatted — surfacing that as a real error so
+    // the UI can show "translation failed" instead of silently switching
+    // to an unchanged track.
+    if failed_chunks == total {
+        return Err(AppError::Config(
+            "Translation failed: all chunks were rate-limited or rejected by the upstream service".into()
+        ));
+    }
+    if failed_chunks > 0 {
+        warn!(failed = failed_chunks, total, "translate_subtitles: some chunks failed; output is partially translated");
     }
 
     // Bail if a newer translation request came in while we were translating
