@@ -33,6 +33,11 @@ ICO_SIZES = [16, 24, 32, 48, 64, 128, 256]
 CHIP_MIN = 64
 FONT_PATH = "C:/Windows/Fonts/consolab.ttf"
 BRAND_YELLOW = (255, 179, 0)  # #ffb300 — to be replaced per extension
+# Outer-edge stroke applied to the recolored squircle so the icon is
+# visible on a white Explorer background (light-mode Windows) without
+# changing how it looks on dark backgrounds.
+BORDER_COLOR = (212, 212, 212)  # #d4d4d4
+BORDER_WIDTH_MASTER = 3  # pixels at 512px master, scaled down by Image.resize
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ICON = os.path.join(ROOT, "src-tauri", "icons", "icon.png")
@@ -63,6 +68,25 @@ def make_icon(size: int, color: str, ext: str) -> Image.Image:
     new_rgb = (frac_white[..., None] * target + frac_yellow[..., None] * 255.0)
     mask = arr[..., 3] > 0
     arr[mask, :3] = new_rgb[mask]
+
+    # Outer ring: pixels in the squircle whose neighbors include
+    # transparent space (i.e. the boundary band). Painting them with a
+    # light grey stops the white squircle from disappearing on a white
+    # Explorer background. The eroded mask shrinks the squircle by
+    # BORDER_WIDTH_MASTER pixels using 4-connectivity; the difference is
+    # the outer-edge band.
+    eroded = mask.copy()
+    for _ in range(BORDER_WIDTH_MASTER):
+        e = eroded.copy()
+        e[1:]    &= eroded[:-1]
+        e[:-1]   &= eroded[1:]
+        e[:, 1:]  &= eroded[:, :-1]
+        e[:, :-1] &= eroded[:, 1:]
+        eroded = e
+    ring = mask & ~eroded
+    arr[ring, :3] = BORDER_COLOR
+    arr[ring, 3] = 255
+
     img = Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8), "RGBA")
     if size != img.width:
         img = img.resize((size, size), Image.Resampling.LANCZOS)
