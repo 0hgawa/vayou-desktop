@@ -41,7 +41,7 @@
     </div>
 
     <!-- Track list -->
-    <div class="flex-1 overflow-y-auto max-h-62.5">
+    <div class="flex-1 overflow-y-auto">
       {#each tracks as track}
         <button
           class="w-full flex items-center px-3 py-2 hover:bg-white/8 text-left {track.selected ? 'text-accent' : 'text-white/70'}"

@@ -195,7 +195,7 @@
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <button aria-label="Close" class="fixed inset-0 z-80 w-full h-full bg-transparent border-none cursor-default" onclick={() => visible = false}></button>
 
-  <div data-panel class="fixed right-4 bottom-16 z-81 w-70 max-h-[80vh] bg-surface-container/95 backdrop-blur-md border border-white/10 rounded-lg shadow-2xl text-[13px] text-white/90 flex flex-col select-none overflow-hidden">
+  <div data-panel class="fixed right-4 bottom-16 z-81 w-70 max-h-[calc(100vh-5rem)] bg-surface-container/95 backdrop-blur-md border border-white/10 rounded-lg shadow-2xl text-[13px] text-white/90 flex flex-col select-none overflow-hidden">
 
     {#if page === "main"}
       <!-- Header -->
@@ -207,7 +207,7 @@
 
       <div class="flex-1 overflow-y-auto">
       <!-- Track list (Disable as virtual entry on top) -->
-      <div class="max-h-[200px] overflow-y-auto">
+      <div>
         <button
           class="w-full flex items-center px-3 py-2 hover:bg-white/8 text-left {noSubSelected ? 'text-accent' : 'text-white/70'}"
           onclick={() => handleSelect(-1)}

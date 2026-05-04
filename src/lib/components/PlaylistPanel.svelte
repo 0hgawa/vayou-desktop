@@ -116,7 +116,7 @@
     </div>
 
     <!-- Items -->
-    <div class="flex-1 overflow-y-auto max-h-[400px]">
+    <div class="flex-1 overflow-y-auto">
       {#each items as item, i}
         <div
           use:scrollIfCurrent={item.current}

@@ -197,7 +197,7 @@
     data-panel
     role="dialog"
     tabindex="-1"
-    class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-91 w-[620px] h-[min(85vh,460px)] bg-surface-container/95 backdrop-blur-md border border-white/10 rounded-lg shadow-2xl text-[13px] text-white/90 flex flex-col select-none overflow-hidden"
+    class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-91 w-[620px] max-h-[min(85vh,640px)] bg-surface-container/95 backdrop-blur-md border border-white/10 rounded-lg shadow-2xl text-[13px] text-white/90 flex flex-col select-none overflow-hidden"
     onclick={(e) => e.stopPropagation()}
     onkeydown={(e) => e.key === "Escape" && close()}
   >
