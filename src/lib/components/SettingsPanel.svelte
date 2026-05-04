@@ -364,14 +364,19 @@
             icon={ICONS.volumeUp}
             title={t().volumeBoost}
             value="200%"
-            onclick={() => {
+            onclick={async () => {
               settings.volumeBoost = !settings.volumeBoost;
               settings.save();
               const max = settings.volumeBoost ? 200 : 100;
-              invoke("set_mpv_property", { name: "volume-max", value: String(max) }).catch(() => {});
-              if (!settings.volumeBoost && settings.volume > 100) {
+              await invoke("set_mpv_property", { name: "volume-max", value: String(max) }).catch(() => {});
+              if (settings.volumeBoost && settings.volume <= 100) {
+                // Bump up so the user instantly hears the boost. Without this
+                // the slider just gains headroom and people think it's broken.
+                settings.volume = 130;
+                await invoke("set_volume", { volume: 130 }).catch(() => {});
+              } else if (!settings.volumeBoost && settings.volume > 100) {
                 settings.volume = 100;
-                invoke("set_volume", { volume: 100 }).catch(() => {});
+                await invoke("set_volume", { volume: 100 }).catch(() => {});
               }
             }}
           >
