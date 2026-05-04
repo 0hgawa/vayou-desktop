@@ -63,7 +63,18 @@ A native desktop video player built on **libmpv**, with a Svelte 5 frontend and 
 - **Microsoft Visual Studio Build Tools** with the *Desktop development with C++* workload (Windows only)
 - **NSIS** (auto-installed by Tauri on first build)
 
-The repository ships with prebuilt `libmpv-2.dll` and `ffmpeg.exe` under `src-tauri/binaries/`. No system-wide installation is required.
+### Native dependencies
+
+`libmpv-2.dll` and `ffmpeg.exe` are not committed to the repository (they total ~220 MB and exceed GitHub's per-file limit). The published installer already bundles them — **only contributors building from source need to fetch them manually**.
+
+Download both into `src-tauri/binaries/`:
+
+| File | Source | Notes |
+|---|---|---|
+| `libmpv-2.dll` | [mpv-player-windows builds](https://sourceforge.net/projects/mpv-player-windows/files/libmpv/) | Pick the latest `mpv-dev-x86_64-vXX.zip`, extract `libmpv-2.dll` |
+| `ffmpeg.exe` | [gyan.dev builds](https://www.gyan.dev/ffmpeg/builds/) | "essentials" build is enough; only the `ffmpeg.exe` is needed |
+
+After placing the two files, the standard `pnpm install && pnpm tauri dev` flow works.
 
 ### Development
 
