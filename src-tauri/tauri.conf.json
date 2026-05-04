@@ -39,18 +39,6 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "fileAssociations": [
-      {
-        "ext": ["mp4", "mkv", "avi", "mov", "webm", "flv", "wmv", "m4v", "ts", "mpg", "mpeg"],
-        "mimeType": "video/*",
-        "description": "Video File"
-      },
-      {
-        "ext": ["mp3", "flac", "ogg", "wav", "aac", "wma", "m4a", "opus"],
-        "mimeType": "audio/*",
-        "description": "Audio File"
-      }
-    ],
     "windows": {
       "nsis": {
         "installerIcon": "icons/icon.ico",
