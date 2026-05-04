@@ -69,13 +69,30 @@ async fn search_by_hash(
     perform_search(&params).await
 }
 
-async fn search_by_query(query: &str, lang: &str) -> Result<Vec<SubResult>, String> {
+async fn search_by_query_once(query: &str, lang: &str) -> Result<Vec<SubResult>, String> {
     let encoded = urlencoding::encode(query).replace('+', "%20");
     let mut params = format!("query-{encoded}");
     if !lang.is_empty() {
         params.push_str(&format!("/sublanguageid-{lang}"));
     }
     perform_search(&params).await
+}
+
+/// Search OpenSubtitles by free-text query. The legacy REST endpoint matches
+/// inconsistently across case — the same title can return dozens of hits in
+/// one casing and zero in another — so when the original query yields
+/// nothing we re-run it lowercased before giving up. Costs an extra request
+/// only on a miss; no local normalization that could hide legitimate hits.
+async fn search_by_query(query: &str, lang: &str) -> Result<Vec<SubResult>, String> {
+    let primary = search_by_query_once(query, lang).await.unwrap_or_default();
+    if !primary.is_empty() {
+        return Ok(primary);
+    }
+    let lower = query.to_lowercase();
+    if lower != query {
+        return Ok(search_by_query_once(&lower, lang).await.unwrap_or_default());
+    }
+    Ok(primary)
 }
 
 /// Combined search: hash (when available) + query, deduped by download link, capped at 50.

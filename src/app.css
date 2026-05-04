@@ -173,14 +173,20 @@ html, body {
 .vayou-switch.on::before { background: color-mix(in srgb, var(--color-accent) 40%, transparent); }
 .vayou-switch.on::after { transform: translateX(26px); background: var(--color-accent); }
 
-/* Text input — used in settings */
-.s-input {
-  background: rgba(255,255,255,0.08); border: 1px solid var(--color-outline);
-  border-radius: var(--radius-sm); padding: 6px 10px; color: white; font-size: 12px;
-  outline: none; width: 100%;
+/* Text input — used in settings.
+   Defined in the components layer so Tailwind padding utilities (e.g.
+   `pr-14`) applied alongside it can still override the default padding;
+   without the layer, this rule comes after the utilities in the cascade
+   and silently wins on equal specificity. */
+@layer components {
+  .s-input {
+    background: rgba(255,255,255,0.08); border: 1px solid var(--color-outline);
+    border-radius: var(--radius-sm); padding: 6px 10px; color: white; font-size: 12px;
+    outline: none; width: 100%;
+  }
+  .s-input:focus { border-color: var(--color-accent); }
+  .s-input::placeholder { color: rgba(255,255,255,0.25); }
 }
-.s-input:focus { border-color: var(--color-accent); }
-.s-input::placeholder { color: rgba(255,255,255,0.25); }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }

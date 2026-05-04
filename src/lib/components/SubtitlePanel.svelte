@@ -46,12 +46,24 @@
   let searchError = $state("");
   let hasSearched = $state(false);
   let queryDirty = $state(false);
+  let lastSeenTitle = $state(player.title || "");
 
-  // Auto-fill the query from the current playing title until the user types.
-  // Reactive on player.title — updates for free when the playlist advances.
+  // Track the playing title and reset search state whenever it changes
+  // (new file or playlist advance). Without the reset, results from the
+  // previous movie stay on screen until the user manually edits the
+  // query, and the auto-fill never runs again because queryDirty stays
+  // true after the first keystroke.
   $effect(() => {
+    const current = player.title || "";
+    if (current !== lastSeenTitle) {
+      lastSeenTitle = current;
+      queryDirty = false;
+      searchResults = [];
+      searchError = "";
+      hasSearched = false;
+    }
     if (!queryDirty) {
-      searchQuery = (player.title || "").replace(/\.[^.]+$/, "");
+      searchQuery = current.replace(/\.[^.]+$/, "");
     }
   });
 
@@ -61,6 +73,14 @@
     if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M dl`;
     if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k dl`;
     return `${n} dl`;
+  }
+
+  // Sub filenames have no spaces, so the browser would never wrap them
+  // and we'd have to truncate. Inserting a zero-width space after each
+  // dot lets `line-clamp-2` break at natural boundaries (between title
+  // tokens) instead of mid-word, while staying invisible to the user.
+  function wrappable(name: string): string {
+    return name.replace(/\./g, ".​");
   }
 
   function openSearch() {
@@ -402,28 +422,29 @@
         <div class="relative">
           <input
             type="text"
-            class="s-input pr-7"
+            class="s-input {searchQuery ? 'pr-14' : 'pr-8'}"
             placeholder={t().searchSubtitle}
             bind:value={searchQuery}
             oninput={() => { queryDirty = true; }}
             onkeydown={(e) => { if (e.key === "Enter") handleSearch(); }}
           />
-          {#if searchQuery}
+          <div class="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+            {#if searchQuery}
+              <button
+                class="ctrl-btn w-5 h-5 text-xs hover:bg-white/10 rounded"
+                aria-label="Clear"
+                onclick={() => { searchQuery = ""; queryDirty = true; }}
+              >✕</button>
+            {/if}
             <button
-              class="absolute right-1.5 top-1/2 -translate-y-1/2 ctrl-btn w-5 h-5 text-xs"
-              aria-label="Clear"
-              onclick={() => { searchQuery = ""; queryDirty = true; }}
-            >✕</button>
-          {:else}
-            <button
-              class="absolute right-1.5 top-1/2 -translate-y-1/2 ctrl-btn w-5 h-5"
+              class="ctrl-btn w-5 h-5 hover:bg-white/10 rounded"
               aria-label="Search"
               disabled={searching}
               onclick={handleSearch}
             >
               <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5A6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5S14 7.01 14 9.5S11.99 14 9.5 14z"/></svg>
             </button>
-          {/if}
+          </div>
         </div>
       </div>
 
@@ -442,13 +463,13 @@
         {:else if searchResults.length > 0}
           {#each searchResults as sub, i}
             <button
-              class="w-full text-left px-3 py-2.5 hover:bg-white/8 disabled:opacity-30 flex items-center gap-3"
+              class="w-full text-left px-3 py-2.5 hover:bg-white/8 disabled:opacity-30 flex items-start gap-3"
               disabled={downloadingIndex !== null}
               onclick={() => handleDownload(sub, i)}
             >
-              <span class="text-accent text-[11px] font-medium uppercase tabular-nums w-9 shrink-0">{sub.lang}</span>
+              <span class="text-accent text-[11px] font-medium uppercase tabular-nums w-9 shrink-0 pt-0.5">{sub.lang}</span>
               <span class="flex-1 min-w-0">
-                <span class="block text-white/85 text-xs truncate">{sub.name}</span>
+                <span class="block text-white/85 text-xs line-clamp-2 leading-snug" title={sub.name}>{wrappable(sub.name)}</span>
                 <span class="flex items-center gap-2 mt-0.5 text-[11px] text-white/40">
                   <span>{formatDownloads(sub.downloads)}</span>
                   {#if sub.matched_by}
