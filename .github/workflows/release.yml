@@ -1,0 +1,59 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+# Required for tauri-action to create a GitHub release and upload assets.
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      # libmpv-2.dll and ffmpeg.exe are not in git (~220 MB combined).
+      # CI must fetch them before the bundle step. Recommended setup:
+      # create a private "deps" release on this repo with both files
+      # attached, then download with `gh release download` here. Until
+      # this step is configured, the workflow will fail at the bundle
+      # stage with "binaries/libmpv-2.dll not found".
+      #
+      # Example once you have a release named `deps-v1`:
+      #
+      #   - name: Fetch native binaries
+      #     env:
+      #       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #     shell: pwsh
+      #     run: |
+      #       New-Item -ItemType Directory -Force src-tauri/binaries | Out-Null
+      #       gh release download deps-v1 --pattern 'libmpv-2.dll' --pattern 'ffmpeg.exe' --dir src-tauri/binaries
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Vayou ${{ github.ref_name }}'
+          releaseDraft: true
+          prerelease: false
