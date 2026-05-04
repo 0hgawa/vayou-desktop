@@ -51,7 +51,7 @@
       onmousedown={(e) => { dragging = true; handleVolume(e); }}
     >
       <!-- Visible thin track -->
-      <div class="w-full h-1 rounded" style="background: #2e2e2e;">
+      <div class="w-full h-1 rounded" style="background: var(--color-surface-container-highest);">
         <div class="h-full bg-white rounded pointer-events-none" style="width: {fillPct}%"></div>
       </div>
       <!-- Thumb -->

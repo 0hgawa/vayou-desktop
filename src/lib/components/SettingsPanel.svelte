@@ -197,7 +197,7 @@
     data-panel
     role="dialog"
     tabindex="-1"
-    class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-91 w-[620px] h-[min(85vh,460px)] bg-[#18181c]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl text-[13px] text-white/90 flex flex-col select-none overflow-hidden"
+    class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-91 w-[620px] h-[min(85vh,460px)] bg-surface-container/95 backdrop-blur-md border border-white/10 rounded-lg shadow-2xl text-[13px] text-white/90 flex flex-col select-none overflow-hidden"
     onclick={(e) => e.stopPropagation()}
     onkeydown={(e) => e.key === "Escape" && close()}
   >
@@ -213,7 +213,7 @@
         {#each categories as cat}
           <button
             onclick={() => (tab = cat.id)}
-            class="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] rounded-lg transition-colors hover:bg-white/8 {tab === cat.id ? 'bg-white/5 text-accent' : 'text-white/70 hover:text-white/95'}"
+            class="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] rounded-md transition-colors hover:bg-white/8 {tab === cat.id ? 'bg-white/5 text-accent' : 'text-white/70 hover:text-white/95'}"
           >
             <svg class="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 24 24">{@html cat.icon}</svg>
             <span class="truncate">{cat.label}</span>

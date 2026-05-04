@@ -66,7 +66,7 @@
   .s-drop-list {
     position: absolute; left: 0; right: 0; top: 100%; margin-top: 4px; z-index: 10;
     max-height: 200px; overflow-y: auto;
-    background: #1a1a1f; border: 1px solid rgba(255,255,255,0.1);
+    background: var(--color-surface-container-high); border: 1px solid rgba(255,255,255,0.1);
     border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); padding: 8px 0;
   }
   .s-drop-item {

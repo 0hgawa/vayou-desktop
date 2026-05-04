@@ -34,7 +34,7 @@
   data-panel
   role="dialog"
   tabindex="-1"
-  class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[96] w-72 max-h-[70vh] bg-[#1a1a1f]/98 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl text-[13px] text-white/90 flex flex-col select-none overflow-hidden"
+  class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[96] w-72 max-h-[70vh] bg-surface-container-high/98 backdrop-blur-md border border-white/10 rounded-lg shadow-2xl text-[13px] text-white/90 flex flex-col select-none overflow-hidden"
   onclick={(e) => e.stopPropagation()}
   onkeydown={(e) => { if (e.key === "Escape") { e.stopPropagation(); onclose(); } }}
 >

@@ -174,7 +174,7 @@
   <button aria-label="Close" class="fixed inset-0 z-70 w-full h-full bg-transparent border-none cursor-default" onclick={() => speedDropOpen = false}></button>
   <div
     data-panel
-    class="fixed z-[71] w-[120px] bg-[#1a1a1f]/98 backdrop-blur-md border border-white/10 rounded-lg shadow-2xl py-2"
+    class="fixed z-[71] w-[120px] bg-surface-container-high/98 backdrop-blur-md border border-white/10 rounded-md shadow-2xl py-2"
     style="bottom: {speedBtnEl ? window.innerHeight - speedBtnEl.getBoundingClientRect().top + 4 : 60}px; left: {speedBtnEl ? speedBtnEl.getBoundingClientRect().left : 0}px;"
   >
     {#each speeds as s}

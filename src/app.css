@@ -1,30 +1,35 @@
 @import "tailwindcss";
 
 @theme {
-  /* Brand */
+  /* Brand — same on mobile and desktop */
   --color-accent: #ffb300;
+  --color-on-accent: #1a1a1a;
 
-  /* Surfaces (current desktop palette — preserved verbatim) */
-  --color-surface: #18181c;          /* base panel bg (used with /95 alpha) */
-  --color-surface-elevated: #1a1a1f; /* dropdowns, context menus (used with /98 alpha) */
-  --color-surface-track: #2e2e2e;    /* inactive slider track */
+  /* Surfaces — M3 hierarchy mirrored from VayouColors.kt (dark theme) */
+  --color-background: #0e0e0e;
+  --color-surface: #0e0e0e;
+  --color-surface-container: #1e1e1e;          /* base panel bg (used with /95 alpha) */
+  --color-surface-container-high: #262626;     /* dropdowns, context menus (used with /98 alpha) */
+  --color-surface-container-highest: #2e2e2e;  /* slider tracks, chips */
 
   /* Text on surface */
-  --color-on-surface: oklch(0.95 0.005 260);
+  --color-on-surface: #f1f1f1;
 
   /* Outlines */
-  --color-outline: oklch(1 0 0 / 0.10);          /* modal edge */
-  --color-outline-variant: oklch(1 0 0 / 0.06);  /* internal dividers */
+  --color-outline: #8e8e8e;                     /* strong outline (badges, dividers when prominent) */
+  --color-outline-variant: #484848;             /* internal dividers */
 
   /* Seek bar */
-  --color-seek-bg: oklch(0.25 0.005 260);
+  --color-seek-bg: var(--color-surface-container-highest);
   --color-seek-progress: var(--color-accent);
 
-  /* Shape */
+  /* Shape — full M3 scale, mirrored from VayouShapes.kt */
   --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
   --radius-full: 9999px;
 
   /* Motion */
@@ -62,7 +67,7 @@ html, body {
   transition: all var(--motion-normal) ease;
 }
 .ctrl-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.18);
   color: white;
   border-radius: 9999px;
 }
@@ -112,7 +117,7 @@ html, body {
   background: linear-gradient(
     to right,
     var(--color-accent) 0%, var(--color-accent) var(--val, 0%),
-    var(--color-surface-track) var(--val, 0%), var(--color-surface-track) 100%
+    var(--color-surface-container-highest) var(--val, 0%), var(--color-surface-container-highest) 100%
   );
   border-radius: 2px; outline: none; cursor: pointer;
 }
@@ -127,9 +132,9 @@ html, body {
   appearance: none; height: 4px;
   background: linear-gradient(
     to right,
-    var(--color-surface-track) 0%, var(--color-surface-track) var(--lo, 50%),
+    var(--color-surface-container-highest) 0%, var(--color-surface-container-highest) var(--lo, 50%),
     var(--color-accent) var(--lo, 50%), var(--color-accent) var(--hi, 50%),
-    var(--color-surface-track) var(--hi, 50%), var(--color-surface-track) 100%
+    var(--color-surface-container-highest) var(--hi, 50%), var(--color-surface-container-highest) 100%
   );
   border-radius: 2px; outline: none; cursor: pointer;
 }

@@ -122,7 +122,7 @@
   <div
     bind:this={menuEl}
     data-panel
-    class="fixed z-[100] min-w-[200px] py-2 bg-[#1a1a1f]/98 backdrop-blur-md border border-white/10 rounded-lg shadow-2xl text-[13px] text-white/90 select-none"
+    class="fixed z-[100] min-w-[200px] py-2 bg-surface-container-high/98 backdrop-blur-md border border-white/10 rounded-md shadow-2xl text-[13px] text-white/90 select-none"
     style="left:{posLeft}px;top:{posTop}px;"
     role="menu"
     tabindex="-1"

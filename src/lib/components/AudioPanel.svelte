@@ -32,7 +32,7 @@
 {#if visible}
   <button aria-label="Close" class="fixed inset-0 z-80 w-full h-full bg-transparent border-none cursor-default" onclick={() => visible = false}></button>
 
-  <div data-panel class="fixed right-4 bottom-16 z-81 w-70 max-h-[60vh] bg-[#18181c]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl text-[13px] text-white/90 flex flex-col select-none">
+  <div data-panel class="fixed right-4 bottom-16 z-81 w-70 max-h-[60vh] bg-surface-container/95 backdrop-blur-md border border-white/10 rounded-lg shadow-2xl text-[13px] text-white/90 flex flex-col select-none">
     <!-- Header -->
     <div class="flex items-center px-3 py-2">
       <span class="font-medium text-xs">{t().audio}</span>
