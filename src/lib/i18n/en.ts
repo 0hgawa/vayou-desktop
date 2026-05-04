@@ -14,6 +14,7 @@ export default {
   setA: "Set A",
   setB: "Set B",
   screenshot: "Screenshot",
+  screenshotSaved: "Screenshot saved",
   mediaInfo: "Media Info",
   settings: "Settings",
   alwaysOnTop: "Always on Top",

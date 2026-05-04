@@ -15,6 +15,7 @@ export default {
   setA: "A सेट करें",
   setB: "B सेट करें",
   screenshot: "स्क्रीनशॉट",
+  screenshotSaved: "स्क्रीनशॉट सहेजा गया",
   mediaInfo: "मीडिया जानकारी",
   settings: "सेटिंग्स",
   alwaysOnTop: "हमेशा ऊपर",

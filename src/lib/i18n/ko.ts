@@ -15,6 +15,7 @@ export default {
   setA: "A 지점 설정",
   setB: "B 지점 설정",
   screenshot: "스크린샷",
+  screenshotSaved: "스크린샷이 저장되었습니다",
   mediaInfo: "미디어 정보",
   settings: "설정",
   alwaysOnTop: "항상 위에",

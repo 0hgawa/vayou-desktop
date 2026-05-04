@@ -15,6 +15,7 @@ export default {
   setA: "Definir A",
   setB: "Definir B",
   screenshot: "Captura de Tela",
+  screenshotSaved: "Captura salva",
   mediaInfo: "Info da Mídia",
   settings: "Configurações",
   alwaysOnTop: "Sempre no Topo",

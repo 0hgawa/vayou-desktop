@@ -20,6 +20,8 @@
   import VideoControls from "$lib/components/VideoControls.svelte";
   import ContextMenu from "$lib/components/ContextMenu.svelte";
   import MediaInfoPanel from "$lib/components/MediaInfoPanel.svelte";
+  import Toast from "$lib/components/Toast.svelte";
+  import { toast } from "$lib/stores/toast.svelte";
 
   let fileLoaded = $state(false);
   let dragOver = $state(false);
@@ -207,7 +209,7 @@
     volumeDown: () => { player.volume = Math.max(0, player.volume - 5); setVolume(player.volume); },
     mute: () => { player.muted = !player.muted; setVolume(player.muted ? 0 : player.volume); },
     fullscreen: () => toggleFullscreen(),
-    screenshot: () => screenshot().catch(() => {}),
+    screenshot: () => screenshot().then(() => toast.show(t().screenshotSaved)).catch(() => {}),
     aspectRatio: () => cycleRatio(),
     cycleSub: () => cycleTrack("sub"),
     cycleAudio: () => cycleTrack("audio"),
@@ -323,4 +325,5 @@
   />
 
   <MediaInfoPanel bind:visible={infoPanel} />
+  <Toast />
 </div>

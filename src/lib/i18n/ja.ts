@@ -15,6 +15,7 @@ export default {
   setA: "A を設定",
   setB: "B を設定",
   screenshot: "スクリーンショット",
+  screenshotSaved: "スクリーンショットを保存しました",
   mediaInfo: "メディア情報",
   settings: "設定",
   alwaysOnTop: "常に最前面",

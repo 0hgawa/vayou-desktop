@@ -15,6 +15,7 @@ export default {
   setA: "A Setzen",
   setB: "B Setzen",
   screenshot: "Bildschirmfoto",
+  screenshotSaved: "Bildschirmfoto gespeichert",
   mediaInfo: "Medieninfo",
   settings: "Einstellungen",
   alwaysOnTop: "Immer im Vordergrund",

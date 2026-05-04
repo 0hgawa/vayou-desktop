@@ -12,6 +12,7 @@
   import { setAspectRatio, getAspectRatio } from "$lib/bindings/video";
   import { sleepTimer } from "$lib/stores/sleepTimer.svelte";
   import { abLoop } from "$lib/stores/abLoop.svelte";
+  import { toast } from "$lib/stores/toast.svelte";
   import { ICONS } from "$lib/icons";
 
   let {
@@ -51,6 +52,23 @@
     ["16:10", "16:10"], ["5:4", "5:4"], ["1:1", "1:1"], ["2.35:1", "2.35:1"], ["2.39:1", "2.39:1"],
   ];
 
+  /** mpv stores `video-aspect-override` as a decimal string (e.g. "1.777778"
+   * for 16:9), while we set it from a ratio string ("16:9"). Compare them
+   * numerically with a small tolerance so the active option lights up. */
+  function ratioToFloat(s: string): number {
+    if (s.includes(":")) {
+      const [a, b] = s.split(":").map(Number);
+      return b ? a / b : NaN;
+    }
+    return parseFloat(s);
+  }
+  function ratioMatches(current: string, value: string): boolean {
+    if (value === "-1") return current === "-1" || parseFloat(current) <= 0;
+    const a = ratioToFloat(current);
+    const b = ratioToFloat(value);
+    return Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) < 0.001;
+  }
+
   $effect(() => {
     if (show) {
       page = "main";
@@ -65,7 +83,10 @@
 
   function act(fn: () => void) { fn(); onclose(); }
 
-  async function handleScreenshot() { await screenshot().catch(() => {}); onclose(); }
+  async function handleScreenshot() {
+    try { await screenshot(); toast.show(t().screenshotSaved); } catch {}
+    onclose();
+  }
   function handleAbLoop() {
     if (abLoop.enabled) abLoop.clear();
     else abLoop.enable();
@@ -116,6 +137,10 @@
   <svg class="w-4 h-4 mr-2.5 shrink-0 {active ? 'text-accent' : 'text-white/55'}" fill="currentColor" viewBox="0 0 24 24">{@html svg}</svg>
 {/snippet}
 
+{#snippet ctxCheck(active: boolean)}
+  <svg class="w-3.5 h-3.5 mr-2 shrink-0 text-accent {active ? 'opacity-100' : 'opacity-0'}" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.check}</svg>
+{/snippet}
+
 <svelte:window onclick={() => show && onclose()} />
 
 {#if show}
@@ -130,36 +155,36 @@
     onkeydown={(e) => e.key === "Escape" && (page === "main" ? onclose() : page = "main")}
   >
     {#if page === "main"}
-      <button class="ctx-item" onclick={() => act(onopen)}>{@render ctxIcon(ICONS.folderOpen)}{t().openFile}<span class="ctx-key">Ctrl+O</span></button>
-      <button class="ctx-item" onclick={() => act(onopenurl)}>{@render ctxIcon(ICONS.link)}{t().openUrl}<span class="ctx-key">Ctrl+U</span></button>
+      <button class="ctx-item text-white/90" onclick={() => act(onopen)}>{@render ctxIcon(ICONS.folderOpen)}{t().openFile}<span class="ctx-key">Ctrl+O</span></button>
+      <button class="ctx-item text-white/90" onclick={() => act(onopenurl)}>{@render ctxIcon(ICONS.link)}{t().openUrl}<span class="ctx-key">Ctrl+U</span></button>
       <div class="ctx-sep"></div>
-      <button class="ctx-item" onclick={() => act(() => togglePause())}>
+      <button class="ctx-item text-white/90" onclick={() => act(() => togglePause())}>
         {@render ctxIcon(player.playing ? ICONS.pause : ICONS.play)}{player.playing ? t().pause : t().play}<span class="ctx-key">Space</span>
       </button>
-      <button class="ctx-item" onclick={() => act(() => stop())}>{@render ctxIcon(ICONS.stop)}{t().stop}</button>
+      <button class="ctx-item text-white/90" onclick={() => act(() => stop())}>{@render ctxIcon(ICONS.stop)}{t().stop}</button>
       <div class="ctx-sep"></div>
       {#if subTracks.length > 0}
-        <button class="ctx-item" onclick={() => page = "sub"}>{@render ctxIcon(ICONS.subtitles)}{t().subtitles}<span class="ctx-arrow">▸</span></button>
+        <button class="ctx-item text-white/90" onclick={() => page = "sub"}>{@render ctxIcon(ICONS.subtitles)}{t().subtitles}<span class="ctx-arrow">▸</span></button>
       {/if}
       {#if audioTracks.length > 0}
-        <button class="ctx-item" onclick={() => page = "audio"}>{@render ctxIcon(ICONS.volumeUp)}{t().audio}<span class="ctx-arrow">▸</span></button>
+        <button class="ctx-item text-white/90" onclick={() => page = "audio"}>{@render ctxIcon(ICONS.volumeUp)}{t().audio}<span class="ctx-arrow">▸</span></button>
       {/if}
-      <button class="ctx-item" onclick={() => page = "speed"}>{@render ctxIcon(ICONS.speed)}{t().speed} ({player.speed}x)<span class="ctx-arrow">▸</span></button>
+      <button class="ctx-item text-white/90" onclick={() => page = "speed"}>{@render ctxIcon(ICONS.speed)}{t().speed} ({player.speed}x)<span class="ctx-arrow">▸</span></button>
       {#if chapters.length > 0}
-        <button class="ctx-item" onclick={() => page = "chapters"}>{@render ctxIcon(ICONS.segment)}{t().chapters}<span class="ctx-arrow">▸</span></button>
+        <button class="ctx-item text-white/90" onclick={() => page = "chapters"}>{@render ctxIcon(ICONS.segment)}{t().chapters}<span class="ctx-arrow">▸</span></button>
       {/if}
-      <button class="ctx-item" onclick={() => page = "aspect"}>{@render ctxIcon(ICONS.aspectRatio)}{t().aspectRatio}<span class="ctx-arrow">▸</span></button>
+      <button class="ctx-item text-white/90" onclick={() => page = "aspect"}>{@render ctxIcon(ICONS.aspectRatio)}{t().aspectRatio}<span class="ctx-arrow">▸</span></button>
       <div class="ctx-sep"></div>
-      <button class="ctx-item" onclick={handleAbLoop}>
+      <button class="ctx-item text-white/90" onclick={handleAbLoop}>
         {@render ctxIcon(ICONS.repeat, abLoop.enabled)}{t().abLoop}{#if abLoopLabel}<span class="text-accent text-[11px] ml-2 tabular-nums">{abLoopLabel}</span>{/if}
         <span class="ctx-key">L</span>
       </button>
-      <button class="ctx-item" onclick={handleScreenshot}>{@render ctxIcon(ICONS.camera)}{t().screenshot}<span class="ctx-key">S</span></button>
+      <button class="ctx-item text-white/90" onclick={handleScreenshot}>{@render ctxIcon(ICONS.camera)}{t().screenshot}<span class="ctx-key">S</span></button>
       <div class="ctx-sep"></div>
-      <button class="ctx-item" onclick={() => { onclose(); onpanel("info"); }}>{@render ctxIcon(ICONS.info)}{t().mediaInfo}<span class="ctx-key">I</span></button>
-      <button class="ctx-item" onclick={() => { onclose(); onpanel("settings"); }}>{@render ctxIcon(ICONS.settings)}{t().settings}</button>
+      <button class="ctx-item text-white/90" onclick={() => { onclose(); onpanel("info"); }}>{@render ctxIcon(ICONS.info)}{t().mediaInfo}<span class="ctx-key">I</span></button>
+      <button class="ctx-item text-white/90" onclick={() => { onclose(); onpanel("settings"); }}>{@render ctxIcon(ICONS.settings)}{t().settings}</button>
       <div class="ctx-sep"></div>
-      <button class="ctx-item" onclick={() => page = "sleep"}>
+      <button class="ctx-item text-white/90" onclick={() => page = "sleep"}>
         {@render ctxIcon(ICONS.timer, sleepTimer.formatted !== null)}{t().sleepTimer}
         {#if sleepTimer.formatted}
           <span class="ctx-key text-accent tabular-nums">{sleepTimer.formatted}</span>
@@ -167,19 +192,19 @@
           <span class="ctx-arrow">▸</span>
         {/if}
       </button>
-      <button class="ctx-item" onclick={handleAlwaysOnTop}>
+      <button class="ctx-item text-white/90" onclick={handleAlwaysOnTop}>
         {@render ctxIcon(ICONS.pushPin, alwaysOnTop)}{t().alwaysOnTop}
       </button>
 
     {:else if page === "sub"}
       <button class="ctx-back" onclick={() => page = "main"}>← {t().subtitles}</button>
       <div class="ctx-sep"></div>
-      <button class="ctx-item" onclick={() => { selectSubtitle(0); onclose(); }}>
-        {subTracks.every((st) => !st.selected) ? "✓ " : "\u00A0 "}{t().off}
+      <button class="ctx-item {subTracks.every((st) => !st.selected) ? 'text-accent' : 'text-white/90'}" onclick={() => { selectSubtitle(0); onclose(); }}>
+        {@render ctxCheck(subTracks.every((st) => !st.selected))}{t().off}
       </button>
       {#each subTracks as t}
-        <button class="ctx-item" onclick={() => { selectSubtitle(t.id); onclose(); }}>
-          {t.selected ? "✓ " : "\u00A0 "}{t.title || langName(t.lang) || `Track ${t.id}`}
+        <button class="ctx-item {t.selected ? 'text-accent' : 'text-white/90'}" onclick={() => { selectSubtitle(t.id); onclose(); }}>
+          {@render ctxCheck(t.selected)}{t.title || langName(t.lang) || `Track ${t.id}`}
         </button>
       {/each}
 
@@ -187,8 +212,8 @@
       <button class="ctx-back" onclick={() => page = "main"}>← {t().audio}</button>
       <div class="ctx-sep"></div>
       {#each audioTracks as t}
-        <button class="ctx-item" onclick={() => { selectAudioTrack(t.id); onclose(); }}>
-          {t.selected ? "✓ " : "\u00A0 "}{t.title || langName(t.lang) || `Track ${t.id}`}
+        <button class="ctx-item {t.selected ? 'text-accent' : 'text-white/90'}" onclick={() => { selectAudioTrack(t.id); onclose(); }}>
+          {@render ctxCheck(t.selected)}{t.title || langName(t.lang) || `Track ${t.id}`}
         </button>
       {/each}
 
@@ -196,8 +221,8 @@
       <button class="ctx-back" onclick={() => page = "main"}>← {t().speed}</button>
       <div class="ctx-sep"></div>
       {#each speeds as s}
-        <button class="ctx-item" onclick={() => { player.speed = s; setSpeed(s); onclose(); }}>
-          {player.speed === s ? "✓ " : "\u00A0 "}{s}x
+        <button class="ctx-item {player.speed === s ? 'text-accent' : 'text-white/90'}" onclick={() => { player.speed = s; setSpeed(s); onclose(); }}>
+          {@render ctxCheck(player.speed === s)}{s}x
         </button>
       {/each}
 
@@ -206,7 +231,7 @@
       <div class="ctx-sep"></div>
       <div class="max-h-[300px] overflow-y-auto">
         {#each chapters as ch}
-          <button class="ctx-item" onclick={() => { seekChapter(ch.index); onclose(); }}>
+          <button class="ctx-item text-white/90" onclick={() => { seekChapter(ch.index); onclose(); }}>
             {ch.current ? "▶ " : "\u00A0 "}{ch.title}
             <span class="ctx-key">{formatTime(ch.time)}</span>
           </button>
@@ -217,8 +242,8 @@
       <button class="ctx-back" onclick={() => page = "main"}>← {t().aspectRatio}</button>
       <div class="ctx-sep"></div>
       {#each ratios as [value, label]}
-        <button class="ctx-item" onclick={() => { setAspectRatio(value); currentRatio = value; onclose(); }}>
-          {currentRatio === value ? "✓ " : "\u00A0 "}{label}
+        <button class="ctx-item {ratioMatches(currentRatio, value) ? 'text-accent' : 'text-white/90'}" onclick={() => { setAspectRatio(value); currentRatio = value; onclose(); }}>
+          {@render ctxCheck(ratioMatches(currentRatio, value))}{label}
         </button>
       {/each}
 
@@ -229,14 +254,14 @@
         <div class="px-3 py-2 text-center">
           <div class="text-accent text-lg font-semibold tabular-nums">{sleepTimer.formatted}</div>
         </div>
-        <button class="ctx-item" onclick={() => { sleepTimer.cancel(); onclose(); }}>
+        <button class="ctx-item text-white/90" onclick={() => { sleepTimer.cancel(); onclose(); }}>
           ✕ {t().cancel}
         </button>
         <div class="ctx-sep"></div>
       {/if}
       {#each [5, 10, 15, 20, 30, 45, 60, 90] as min}
-        <button class="ctx-item" onclick={() => { sleepTimer.setTimer(min); onclose(); }}>
-          {sleepTimer.activeMinutes === min ? "✓ " : "\u00A0 "}{min} min
+        <button class="ctx-item {sleepTimer.activeMinutes === min ? 'text-accent' : 'text-white/90'}" onclick={() => { sleepTimer.setTimer(min); onclose(); }}>
+          {@render ctxCheck(sleepTimer.activeMinutes === min)}{min} min
         </button>
       {/each}
     {/if}
@@ -252,7 +277,6 @@
     text-align: left;
     background: none;
     border: none;
-    color: rgba(255, 255, 255, 0.9);
     font-size: 13px;
     white-space: nowrap;
   }

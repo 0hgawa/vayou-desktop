@@ -15,6 +15,7 @@ export default {
   setA: "تعيين A",
   setB: "تعيين B",
   screenshot: "لقطة شاشة",
+  screenshotSaved: "تم حفظ لقطة الشاشة",
   mediaInfo: "معلومات الوسائط",
   settings: "الإعدادات",
   alwaysOnTop: "دائمًا في المقدمة",

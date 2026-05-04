@@ -15,6 +15,7 @@ export default {
   setA: "Установить A",
   setB: "Установить B",
   screenshot: "Снимок экрана",
+  screenshotSaved: "Снимок экрана сохранён",
   mediaInfo: "Сведения о медиа",
   settings: "Настройки",
   alwaysOnTop: "Поверх всех окон",

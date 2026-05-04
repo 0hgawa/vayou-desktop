@@ -15,6 +15,7 @@ export default {
   setA: "设置 A 点",
   setB: "设置 B 点",
   screenshot: "截图",
+  screenshotSaved: "截图已保存",
   mediaInfo: "媒体信息",
   settings: "设置",
   alwaysOnTop: "置顶",

@@ -15,6 +15,7 @@ export default {
   setA: "Imposta A",
   setB: "Imposta B",
   screenshot: "Cattura Schermo",
+  screenshotSaved: "Cattura salvata",
   mediaInfo: "Info Media",
   settings: "Impostazioni",
   alwaysOnTop: "Sempre in Primo Piano",
