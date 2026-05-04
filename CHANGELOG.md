@@ -5,6 +5,23 @@ All notable changes to Vayou are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] — 2026-05-04
+
+### Changed
+
+- Subtitle translation now uses the Chrome-extension endpoint at `clients5.google.com` first and falls back to the public `gtx` endpoint, sends a real Chrome User-Agent, and retries up to three times with backoff on 429/403. After v0.1.0 went live a number of users hit Google's rate limit on the public endpoint; the new path is what extensions like the official Translate one use and absorbs much higher request volume.
+- Translation failures are now surfaced. Previously, when chunks were rate-limited, the writer silently produced an SRT containing the original text and reported success — the panel showed "translated" but the content was unchanged. The pipeline now counts failed chunks, emits a real error when every chunk fails, and warns when only some succeeded.
+- Subtitle search UX: the search button is always visible (instead of being replaced by the clear button when text is present), long subtitle filenames wrap to two lines so the episode tag, resolution and release group are visible at a glance, and the panel resets when the playing video changes.
+- Subtitle search now retries case-insensitively on a miss. The legacy OpenSubtitles REST endpoint matches inconsistently across case; if the original query returns zero results, the app re-runs it lowercased before giving up.
+
+### Fixed
+
+- Switching to a different sub track while a translation was active and clicking Translate again no longer reverts to the original source. The previous code unconditionally restored the source `sid` after removing the translation, ignoring the user's new selection. The restore now only happens as a fallback when no other sub is selected.
+- Subtitle search input padding now adapts when buttons are shown, so the typed text no longer overflows behind the search/clear icons.
+- ffmpeg subtitle extraction logs start and finish (with elapsed time) and times out after 30 s instead of 60 s, so a hung extract is visible in the log instead of looking like a network stall.
+
+[0.1.1]: https://github.com/0hgawa/vayou-desktop/releases/tag/v0.1.1
+
 ## [0.1.0] — 2026-05-04
 
 First public release.
