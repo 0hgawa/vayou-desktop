@@ -314,14 +314,17 @@
       <div class="flex-1 overflow-y-auto p-3 space-y-3">
         <div>
           <span class="text-white/50 text-xs block mb-1">{t().font}</span>
-          <div class="flex items-center gap-1.5">
-            <div class="flex-1"><Select items={subFonts} value={settings.subFont} itemStyle={(f) => `font-family:'${f}'`} onchange={(f) => { settings.subFont = f; settings.applySubStyle(); }} /></div>
-            <button
-              class="w-8 h-8 rounded-md text-sm font-bold transition-all {settings.subBold ? 'bg-accent/20 text-accent' : 'bg-white/8 text-white/60 hover:bg-white/12'}"
-              onclick={() => { settings.subBold = !settings.subBold; settings.applySubStyle(); }}
-            >B</button>
-          </div>
+          <Select items={subFonts} value={settings.subFont} itemStyle={(f) => `font-family:'${f}'`} onchange={(f) => { settings.subFont = f; settings.applySubStyle(); }} />
         </div>
+
+        <button
+          type="button"
+          class="w-full flex items-center justify-between text-left text-white/85 text-xs"
+          onclick={() => { settings.subBold = !settings.subBold; settings.applySubStyle(); }}
+        >
+          <span>{t().bold}</span>
+          <span class="vayou-switch" class:on={settings.subBold}></span>
+        </button>
 
         <div>
           <div class="flex items-center justify-between mb-1">

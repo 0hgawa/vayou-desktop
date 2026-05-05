@@ -41,6 +41,7 @@ export default {
   borderSize: "حجم الحدود",
   position: "الموضع",
   text: "النص",
+  bold: "????",
   border: "الحدود",
 
   // Playlist

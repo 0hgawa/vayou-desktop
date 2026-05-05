@@ -41,6 +41,7 @@ export default {
   borderSize: "Tamanho da Borda",
   position: "Posição",
   text: "Texto",
+  bold: "Negrito",
   border: "Borda",
 
   // Playlist

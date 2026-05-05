@@ -41,6 +41,7 @@ export default {
   borderSize: "縁取りサイズ",
   position: "位置",
   text: "文字",
+  bold: "??",
   border: "縁取り",
 
   // Playlist

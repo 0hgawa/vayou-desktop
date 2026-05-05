@@ -41,6 +41,7 @@ export default {
   borderSize: "테두리 크기",
   position: "위치",
   text: "글자",
+  bold: "??",
   border: "테두리",
 
   // Playlist

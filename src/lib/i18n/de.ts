@@ -41,6 +41,7 @@ export default {
   borderSize: "Randgröße",
   position: "Position",
   text: "Text",
+  bold: "Fett",
   border: "Rand",
 
   // Playlist

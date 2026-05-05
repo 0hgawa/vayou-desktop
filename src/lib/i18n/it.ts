@@ -41,6 +41,7 @@ export default {
   borderSize: "Dimensione del Bordo",
   position: "Posizione",
   text: "Testo",
+  bold: "Grassetto",
   border: "Bordo",
 
   // Playlist

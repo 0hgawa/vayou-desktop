@@ -41,6 +41,7 @@ export default {
   borderSize: "Толщина обводки",
   position: "Положение",
   text: "Текст",
+  bold: "??????",
   border: "Обводка",
 
   // Playlist

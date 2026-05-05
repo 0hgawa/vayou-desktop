@@ -41,6 +41,7 @@ export default {
   borderSize: "बॉर्डर आकार",
   position: "स्थिति",
   text: "टेक्स्ट",
+  bold: "????",
   border: "बॉर्डर",
 
   // Playlist

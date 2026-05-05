@@ -41,6 +41,7 @@ export default {
   borderSize: "边框大小",
   position: "位置",
   text: "文字",
+  bold: "??",
   border: "边框",
 
   // Playlist

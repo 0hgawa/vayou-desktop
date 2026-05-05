@@ -40,6 +40,7 @@ export default {
   borderSize: "Border Size",
   position: "Position",
   text: "Text",
+  bold: "Bold",
   border: "Border",
 
   // Playlist

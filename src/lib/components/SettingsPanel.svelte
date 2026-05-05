@@ -470,13 +470,15 @@
             title={t().font}
             value={settings.subFont}
             onclick={() => (dialog = "font")}
+          />
+
+          <SettingRow
+            icon={ICONS.formatBold}
+            title={t().bold}
+            onclick={() => { settings.subBold = !settings.subBold; settings.applySubStyle(); }}
           >
             {#snippet trailing()}
-              <button
-                class="w-7 h-7 rounded-md text-sm font-bold transition-all {settings.subBold ? 'bg-accent/20 text-accent' : 'bg-white/[0.06] text-white/60 hover:bg-white/[0.12]'}"
-                onclick={(e) => { e.stopPropagation(); settings.subBold = !settings.subBold; settings.applySubStyle(); }}
-                title="Bold"
-              >B</button>
+              <span class="vayou-switch" class:on={settings.subBold}></span>
             {/snippet}
           </SettingRow>
 
