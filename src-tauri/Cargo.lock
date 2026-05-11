@@ -4500,6 +4500,7 @@ dependencies = [
  "dirs",
  "flate2",
  "libloading 0.8.9",
+ "raw-window-handle",
  "reqwest 0.12.28",
  "serde",
  "serde_json",
