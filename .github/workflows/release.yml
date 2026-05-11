@@ -1,0 +1,127 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  # Manual trigger (Actions tab → Run workflow). Useful for shaking out the
+  # Linux build before cutting a real tag — uploads .deb / .AppImage as a
+  # workflow artifact so they can be downloaded without a public release.
+  workflow_dispatch:
+
+# Required for tauri-action to create the GitHub release and upload assets.
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target-name: windows
+          - os: ubuntu-22.04
+            target-name: linux
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: ${{ matrix.target-name }}
+
+      # Linux build dependencies — Tauri 2 + libmpv + ffmpeg + GTK stack.
+      # Pinned to ubuntu-22.04 because 24.04 dropped libwebkit2gtk-4.1
+      # transitional package; once tauri-apps officially recommends 24.04
+      # we can move forward.
+      - name: Install Linux build deps
+        if: matrix.target-name == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libsoup-3.0-dev \
+            libmpv-dev \
+            ffmpeg \
+            patchelf \
+            xvfb
+
+      # libmpv-2.dll and ffmpeg.exe are not in git (~220 MB combined). Windows
+      # CI fetches them from the deps-v1 prerelease before bundling. Linux
+      # uses the system packages installed above and skips this step.
+      - name: Fetch native binaries (Windows)
+        if: matrix.target-name == 'windows'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force src-tauri/binaries | Out-Null
+          gh release download deps-v1 --repo ${{ github.repository }} --pattern 'libmpv-2.dll' --pattern 'ffmpeg.exe' --dir src-tauri/binaries
+
+      - run: pnpm install --frozen-lockfile
+
+      - id: tauri
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Only create a real release when this run is triggered by a tag
+          # push. workflow_dispatch leaves these empty so the action just
+          # builds artifacts and we collect them via upload-artifact below.
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
+          releaseName: ${{ startsWith(github.ref, 'refs/tags/') && format('Vayou {0}', github.ref_name) || '' }}
+          releaseDraft: ${{ startsWith(github.ref, 'refs/tags/') }}
+          prerelease: false
+
+      # Headless smoke test on Linux: launches the freshly-built AppImage
+      # under Xvfb (virtual framebuffer) for 10 seconds. If the process
+      # survives the window, libmpv loaded, GTK/WebKit initialised, the
+      # Tauri runtime came up — i.e. the app is at least "alive". If it
+      # exits early, CI fails the build with the actual exit code.
+      # Doesn't validate playback, hardware accel or UI correctness —
+      # those still need a real Linux box.
+      - name: Smoke test (Linux)
+        if: matrix.target-name == 'linux'
+        run: |
+          APPIMG=$(find src-tauri/target/release/bundle/appimage -name '*.AppImage' | head -1)
+          if [ -z "$APPIMG" ]; then echo "::error::no AppImage produced"; exit 1; fi
+          chmod +x "$APPIMG"
+          set +e
+          xvfb-run -a timeout 10s "$APPIMG"
+          EXIT=$?
+          set -e
+          # 124 = timeout had to kill it (app was alive the whole time)
+          # 143 = SIGTERM delivered (also "killed while alive")
+          case "$EXIT" in
+            124|143) echo "Vayou survived the 10s smoke window" ;;
+            0)       echo "::error::Vayou exited cleanly during the smoke window — unexpected"; exit 1 ;;
+            *)       echo "::error::Vayou exited with $EXIT before the 10s smoke window — runtime/init failure"; exit 1 ;;
+          esac
+
+      - name: Upload bundles as workflow artifact
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: vayou-${{ matrix.target-name }}
+          path: |
+            src-tauri/target/release/bundle/**/*.exe
+            src-tauri/target/release/bundle/**/*.deb
+            src-tauri/target/release/bundle/**/*.AppImage
+          if-no-files-found: ignore
