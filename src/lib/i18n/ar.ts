@@ -141,7 +141,7 @@ export default {
 
   // About / Updates
   about: "حول",
-  nativeVideoPlayer: "مشغل فيديو أصلي",
+  videoPlayer: "مشغل فيديو",
   applicationUpdates: "تحديثات التطبيق",
   updateCheckHint: "تحقق مما إذا كان هناك إصدار أحدث متاح.",
   checkForUpdates: "التحقق من التحديثات",

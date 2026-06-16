@@ -141,7 +141,7 @@ export default {
 
   // About / Updates
   about: "О программе",
-  nativeVideoPlayer: "Нативный видеоплеер",
+  videoPlayer: "Видеоплеер",
   applicationUpdates: "Обновления приложения",
   updateCheckHint: "Проверить наличие более новой версии.",
   checkForUpdates: "Проверить обновления",

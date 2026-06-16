@@ -141,7 +141,7 @@ export default {
 
   // About / Updates
   about: "关于",
-  nativeVideoPlayer: "原生视频播放器",
+  videoPlayer: "视频播放器",
   applicationUpdates: "应用更新",
   updateCheckHint: "检查是否有更新的版本。",
   checkForUpdates: "检查更新",

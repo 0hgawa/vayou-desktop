@@ -626,7 +626,7 @@
             <!-- App identity -->
             <div class="px-1">
               <div class="text-[22px] font-bold text-white/90 leading-tight">Vayou</div>
-              <div class="text-[12px] text-white/55 mt-0.5">{t().nativeVideoPlayer}</div>
+              <div class="text-[12px] text-white/55 mt-0.5">{t().videoPlayer}</div>
               <div class="text-[12px] text-white/35 mt-0.5">v{appVersion}</div>
             </div>
 

@@ -21,6 +21,7 @@
   import ContextMenu from "$lib/components/ContextMenu.svelte";
   import MediaInfoPanel from "$lib/components/MediaInfoPanel.svelte";
   import Toast from "$lib/components/Toast.svelte";
+  import VolumeOsd from "$lib/components/VolumeOsd.svelte";
   import { toast } from "$lib/stores/toast.svelte";
 
   let fileLoaded = $state(false);
@@ -325,5 +326,6 @@
   />
 
   <MediaInfoPanel bind:visible={infoPanel} />
+  <VolumeOsd />
   <Toast />
 </div>

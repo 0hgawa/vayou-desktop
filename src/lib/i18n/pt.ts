@@ -141,7 +141,7 @@ export default {
 
   // About / Updates
   about: "Sobre",
-  nativeVideoPlayer: "Reprodutor de vídeo nativo",
+  videoPlayer: "Reprodutor de vídeo",
   applicationUpdates: "Atualizações do aplicativo",
   updateCheckHint: "Verifique se há uma versão mais recente disponível.",
   checkForUpdates: "Verificar atualizações",

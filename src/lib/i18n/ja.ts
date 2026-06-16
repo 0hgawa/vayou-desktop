@@ -141,7 +141,7 @@ export default {
 
   // About / Updates
   about: "情報",
-  nativeVideoPlayer: "ネイティブ動画プレーヤー",
+  videoPlayer: "動画プレーヤー",
   applicationUpdates: "アプリのアップデート",
   updateCheckHint: "新しいバージョンがあるか確認します。",
   checkForUpdates: "アップデートを確認",

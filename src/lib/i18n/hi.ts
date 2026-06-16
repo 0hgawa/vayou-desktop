@@ -141,7 +141,7 @@ export default {
 
   // About / Updates
   about: "परिचय",
-  nativeVideoPlayer: "नेटिव वीडियो प्लेयर",
+  videoPlayer: "वीडियो प्लेयर",
   applicationUpdates: "एप्लिकेशन अपडेट",
   updateCheckHint: "जांचें कि क्या कोई नया संस्करण उपलब्ध है।",
   checkForUpdates: "अपडेट जांचें",

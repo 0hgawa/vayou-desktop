@@ -141,7 +141,7 @@ export default {
 
   // About / Updates
   about: "정보",
-  nativeVideoPlayer: "네이티브 비디오 플레이어",
+  videoPlayer: "비디오 플레이어",
   applicationUpdates: "앱 업데이트",
   updateCheckHint: "새 버전이 있는지 확인합니다.",
   checkForUpdates: "업데이트 확인",
