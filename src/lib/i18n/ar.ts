@@ -138,4 +138,23 @@ export default {
   welcomeTitle: "Vayou",
   welcomeSubtitle: "أسقط ملفًا هنا أو اضغط",
   toOpen: "للفتح",
+
+  // About / Updates
+  about: "حول",
+  nativeVideoPlayer: "مشغل فيديو أصلي",
+  applicationUpdates: "تحديثات التطبيق",
+  updateCheckHint: "تحقق مما إذا كان هناك إصدار أحدث متاح.",
+  checkForUpdates: "التحقق من التحديثات",
+  checkingUpdates: "جارٍ التحقق...",
+  upToDate: "أنت تستخدم أحدث إصدار.",
+  updateAvailable: "تحديث متاح:",
+  downloadingUpdate: "جارٍ التنزيل والتحقق...",
+  updateInstalled: "تم تثبيت التحديث. أعد التشغيل للتطبيق.",
+  updateFailed: "تعذّر التحديث:",
+  openReleasesPage: "فتح صفحة الإصدارات",
+  install: "تثبيت",
+  installing: "جارٍ التثبيت...",
+  restartNow: "إعادة التشغيل الآن",
+  restoreDefaultsDesc: "إعادة تعيين كل الإعدادات إلى قيمها الافتراضية.",
+  restoredToDefaults: "تمت الاستعادة إلى الإعدادات الافتراضية",
 } satisfies Dict;

@@ -138,4 +138,23 @@ export default {
   welcomeTitle: "Vayou",
   welcomeSubtitle: "ここにファイルをドロップするか",
   toOpen: "で開く",
+
+  // About / Updates
+  about: "情報",
+  nativeVideoPlayer: "ネイティブ動画プレーヤー",
+  applicationUpdates: "アプリのアップデート",
+  updateCheckHint: "新しいバージョンがあるか確認します。",
+  checkForUpdates: "アップデートを確認",
+  checkingUpdates: "確認中...",
+  upToDate: "最新バージョンです。",
+  updateAvailable: "アップデートが利用可能:",
+  downloadingUpdate: "ダウンロードして検証中...",
+  updateInstalled: "アップデートをインストールしました。再起動して適用してください。",
+  updateFailed: "更新できませんでした:",
+  openReleasesPage: "リリースページを開く",
+  install: "インストール",
+  installing: "インストール中...",
+  restartNow: "今すぐ再起動",
+  restoreDefaultsDesc: "すべての設定を既定値に戻します。",
+  restoredToDefaults: "既定値に戻しました",
 } satisfies Dict;

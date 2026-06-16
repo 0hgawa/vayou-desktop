@@ -138,4 +138,23 @@ export default {
   welcomeTitle: "Vayou",
   welcomeSubtitle: "여기에 파일을 놓거나",
   toOpen: "눌러서 열기",
+
+  // About / Updates
+  about: "정보",
+  nativeVideoPlayer: "네이티브 비디오 플레이어",
+  applicationUpdates: "앱 업데이트",
+  updateCheckHint: "새 버전이 있는지 확인합니다.",
+  checkForUpdates: "업데이트 확인",
+  checkingUpdates: "확인 중...",
+  upToDate: "최신 버전입니다.",
+  updateAvailable: "업데이트 사용 가능:",
+  downloadingUpdate: "다운로드 및 확인 중...",
+  updateInstalled: "업데이트가 설치되었습니다. 적용하려면 다시 시작하세요.",
+  updateFailed: "업데이트할 수 없습니다:",
+  openReleasesPage: "릴리스 페이지 열기",
+  install: "설치",
+  installing: "설치 중...",
+  restartNow: "지금 다시 시작",
+  restoreDefaultsDesc: "모든 설정을 기본값으로 되돌립니다.",
+  restoredToDefaults: "기본값으로 복원되었습니다",
 } satisfies Dict;

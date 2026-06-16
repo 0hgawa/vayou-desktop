@@ -17,12 +17,26 @@ pub enum AppError {
     Config(String),
 }
 
+impl AppError {
+    /// The message surfaced to the UI — without the internal category prefix
+    /// that `Display` carries for logs, so the user sees "No file playing"
+    /// instead of "config: No file playing".
+    fn user_message(&self) -> String {
+        match self {
+            Self::Mpv(e) => e.to_string(),
+            Self::FileNotFound(path) => format!("File not found: {path}"),
+            Self::Io(e) => e.to_string(),
+            Self::Config(msg) => msg.clone(),
+        }
+    }
+}
+
 impl Serialize for AppError {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::ser::Serializer,
     {
-        serializer.serialize_str(self.to_string().as_ref())
+        serializer.serialize_str(&self.user_message())
     }
 }
 

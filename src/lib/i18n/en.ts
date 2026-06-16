@@ -137,4 +137,23 @@ export default {
   welcomeTitle: "Vayou",
   welcomeSubtitle: "Drop a file here or press",
   toOpen: "to open",
+
+  // About / Updates
+  about: "About",
+  nativeVideoPlayer: "Native video player",
+  applicationUpdates: "Application updates",
+  updateCheckHint: "Check whether a newer version is available.",
+  checkForUpdates: "Check for updates",
+  checkingUpdates: "Checking...",
+  upToDate: "You're on the latest version.",
+  updateAvailable: "Update available:",
+  downloadingUpdate: "Downloading and verifying...",
+  updateInstalled: "Update installed. Restart to apply.",
+  updateFailed: "Couldn't update:",
+  openReleasesPage: "Open releases page",
+  install: "Install",
+  installing: "Installing...",
+  restartNow: "Restart now",
+  restoreDefaultsDesc: "Reset every setting to its default value.",
+  restoredToDefaults: "Restored to defaults",
 } as const;

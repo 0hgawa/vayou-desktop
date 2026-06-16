@@ -59,14 +59,12 @@ async fn try_chrome_ext(text: &str, tl: &str) -> Result<String, String> {
         .send()
     ).await?;
     let body: Value = resp.json().await.map_err(|e| e.to_string())?;
-    // The endpoint returns either a flat `["translated"]` for a single q,
-    // or `[["seg1", "seg2", ...]]` when q has line breaks.
-    if let Some(s) = body.get(0).and_then(|v| v.as_str()) {
-        return Ok(s.to_string());
-    }
-    if let Some(arr) = body.get(0).and_then(|v| v.as_array()) {
-        let s: String = arr.iter().filter_map(|v| v.as_str()).collect();
-        if !s.is_empty() { return Ok(s); }
+    // dict-chrome-ex returns `[["translated text", "detected_source_lang"]]`:
+    // the translation (newlines preserved) followed by the auto-detected source
+    // code. Take ONLY the translation ([0][0]) — concatenating the inner array
+    // appended that source code ("en"/"es") to the end of the text.
+    if let Some(s) = body.pointer("/0/0").and_then(|v| v.as_str()) {
+        if !s.is_empty() { return Ok(s.to_string()); }
     }
     Err("empty chrome-ext response".into())
 }

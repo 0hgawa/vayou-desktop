@@ -3,13 +3,16 @@
   import { setAudioNormalization, setAudioEqualizer, resetAudioEqualizer } from "$lib/bindings/audio-fx";
   import { invoke } from "@tauri-apps/api/core";
   import { settings, subFonts } from "$lib/stores/settings.svelte";
+  import { toast } from "$lib/stores/toast.svelte";
   import { keybindings, KeybindingsStore } from "$lib/stores/keybindings.svelte";
   import { t, setLocale } from "$lib/i18n/index.svelte";
   import { ICONS } from "$lib/icons";
   import SettingRow from "./SettingRow.svelte";
   import OptionsDialog from "./OptionsDialog.svelte";
+  import { getVersion } from "@tauri-apps/api/app";
+  import { checkUpdate, installUpdate, relaunchApp, openReleasePage, type UpdateInfo } from "$lib/bindings/update";
 
-  type Tab = "general" | "video" | "audio" | "subtitles" | "shortcuts";
+  type Tab = "general" | "video" | "audio" | "subtitles" | "shortcuts" | "about";
   type Dialog = null | "language" | "speed" | "font" | "audioLang" | "subLang" | "subEncoding";
 
   let { visible = $bindable(false) }: { visible: boolean } = $props();
@@ -35,6 +38,11 @@
     Vocal: [-2, 0, 4, 4, 0],
     Rock: [4, 2, -1, 2, 4],
   };
+  // The preset matching the current bands (lights up its pill); null when the
+  // user has dragged the sliders to a custom curve.
+  const activePreset = $derived(
+    Object.keys(eqPresets).find((name) => eqPresets[name].every((v, i) => v === eqBands[i])) ?? null,
+  );
 
   const speeds = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 3.0, 4.0];
   const languages: Record<string, string> = {
@@ -79,6 +87,7 @@
     { id: "audio", get label() { return t().audio; }, icon: ICONS.graphicEq },
     { id: "subtitles", get label() { return t().subtitles; }, icon: ICONS.subtitles },
     { id: "shortcuts", get label() { return t().shortcuts; }, icon: ICONS.keyboard },
+    { id: "about", get label() { return t().about; }, icon: ICONS.info },
   ];
 
   const languageOptions = $derived(
@@ -161,6 +170,42 @@
     setAudioNormalization(false);
   }
 
+  // About tab: app version + signed self-update.
+  let appVersion = $state("");
+  getVersion().then((v) => (appVersion = v));
+
+  // Update status: 0 idle · 1 checking · 2 latest · 3 available · 4 failed · 5 installing · 6 installed
+  let updateStatus = $state(0);
+  let updateDetail = $state("");
+  let pendingUpdate: UpdateInfo | null = null;
+
+  async function checkUpdates() {
+    updateStatus = 1;
+    try {
+      const info = await checkUpdate();
+      if (info) { pendingUpdate = info; updateDetail = info.version; updateStatus = 3; }
+      else updateStatus = 2;
+    } catch (e) { updateDetail = String(e); updateStatus = 4; }
+  }
+  async function applyUpdate() {
+    if (!pendingUpdate) return;
+    updateStatus = 5;
+    try { await installUpdate(pendingUpdate); updateStatus = 6; }
+    catch (e) { updateDetail = String(e); updateStatus = 4; }
+  }
+  function updateAction() {
+    if (updateStatus === 6) relaunchApp();
+    else if (updateStatus === 3) applyUpdate();
+    else if (updateStatus !== 1 && updateStatus !== 5) checkUpdates();
+  }
+
+  // Reset buttons run instantly and confirm via a toast — the standard pattern
+  // for non-destructive resets.
+  function doReset(action: () => void) {
+    action();
+    toast.show(t().restoredToDefaults);
+  }
+
   function handleRebind(e: KeyboardEvent) {
     if (!rebinding) return;
     e.preventDefault(); e.stopPropagation();
@@ -207,6 +252,21 @@
       <button onclick={close} class="ctrl-btn w-7 h-7 text-xs">✕</button>
     </div>
 
+    {#snippet sectionHeader(label: string, reset: (() => void) | null)}
+      <div class="flex items-center gap-3 px-4 pt-5 pb-2">
+        <span class="text-[11px] uppercase tracking-wider text-white/35 font-medium shrink-0">{label}</span>
+        <div class="flex-1 h-px bg-white/[0.07]"></div>
+        {#if reset}
+          <button
+            class="text-[11px] text-white/40 hover:text-white/80 transition-colors shrink-0"
+            onclick={() => doReset(reset)}
+          >
+            {t().reset}
+          </button>
+        {/if}
+      </div>
+    {/snippet}
+
     <div class="flex flex-1 min-h-0">
       <!-- Rail -->
       <nav class="w-[200px] py-2 px-2 shrink-0 overflow-y-auto space-y-0.5">
@@ -235,17 +295,7 @@
             {/snippet}
           </SettingRow>
 
-          <SettingRow icon={ICONS.volumeUp} title={t().defaultVolume} value="{settings.volume}%">
-            {#snippet below()}
-              <input
-                type="range" min="0" max={settings.volumeBoost ? 200 : 100}
-                bind:value={settings.volume}
-                oninput={() => settings.save()}
-                class="s-range w-full"
-                style="--val: {(settings.volume / (settings.volumeBoost ? 200 : 100)) * 100}%"
-              />
-            {/snippet}
-          </SettingRow>
+          <div class="h-px bg-white/[0.06] mx-4 my-2"></div>
 
           <SettingRow
             icon={ICONS.speed}
@@ -255,38 +305,6 @@
           >
             {#snippet trailing()}
               <svg class="w-4 h-4 text-white/30" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.chevronRight}</svg>
-            {/snippet}
-          </SettingRow>
-
-          <SettingRow
-            icon={ICONS.volumeUp}
-            title={t().preferredAudio}
-            value={langDisplay(settings.preferredAudioLang)}
-            onclick={() => (dialog = "audioLang")}
-          >
-            {#snippet trailing()}
-              <svg class="w-4 h-4 text-white/30" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.chevronRight}</svg>
-            {/snippet}
-          </SettingRow>
-
-          <SettingRow
-            icon={ICONS.subtitles}
-            title={t().preferredSubtitle}
-            value={langDisplay(settings.preferredSubtitleLang)}
-            onclick={() => (dialog = "subLang")}
-          >
-            {#snippet trailing()}
-              <svg class="w-4 h-4 text-white/30" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.chevronRight}</svg>
-            {/snippet}
-          </SettingRow>
-
-          <SettingRow
-            icon={ICONS.history}
-            title={t().rememberPosition}
-            onclick={() => { settings.rememberPosition = !settings.rememberPosition; settings.save(); }}
-          >
-            {#snippet trailing()}
-              <span class="vayou-switch" class:on={settings.rememberPosition}></span>
             {/snippet}
           </SettingRow>
 
@@ -301,6 +319,16 @@
           </SettingRow>
 
           <SettingRow
+            icon={ICONS.history}
+            title={t().rememberPosition}
+            onclick={() => { settings.rememberPosition = !settings.rememberPosition; settings.save(); }}
+          >
+            {#snippet trailing()}
+              <span class="vayou-switch" class:on={settings.rememberPosition}></span>
+            {/snippet}
+          </SettingRow>
+
+          <SettingRow
             icon={ICONS.check}
             title={t().rememberSelections}
             onclick={() => { settings.rememberSelections = !settings.rememberSelections; settings.save(); }}
@@ -311,13 +339,7 @@
           </SettingRow>
 
         {:else if tab === "video"}
-          <div class="px-4 pt-4 pb-1 flex items-center justify-between">
-            <span class="text-[11px] uppercase tracking-wider text-accent font-medium">{t().color}</span>
-            <button class="flex items-center gap-1 text-[11px] text-white/40 hover:text-white/80 transition-colors" onclick={resetVideo} title={t().reset}>
-              <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.restartAlt}</svg>
-              {t().reset}
-            </button>
-          </div>
+          {@render sectionHeader(t().color, resetVideo)}
 
           {#each [
             { icon: ICONS.brightness, get label() { return t().brightness; }, get: () => brightness, set: (v: number) => { brightness = v; setBrightness(v); } },
@@ -349,6 +371,8 @@
             {/snippet}
           </SettingRow>
 
+          <div class="h-px bg-white/[0.06] mx-4 my-2"></div>
+
           <SettingRow
             icon={ICONS.tune}
             title={t().deinterlace}
@@ -360,6 +384,29 @@
           </SettingRow>
 
         {:else if tab === "audio"}
+          <SettingRow icon={ICONS.volumeUp} title={t().defaultVolume} value="{settings.volume}%">
+            {#snippet below()}
+              <input
+                type="range" min="0" max={settings.volumeBoost ? 200 : 100}
+                bind:value={settings.volume}
+                oninput={() => settings.save()}
+                class="s-range w-full"
+                style="--val: {(settings.volume / (settings.volumeBoost ? 200 : 100)) * 100}%"
+              />
+            {/snippet}
+          </SettingRow>
+
+          <SettingRow
+            icon={ICONS.audio}
+            title={t().preferredAudio}
+            value={langDisplay(settings.preferredAudioLang)}
+            onclick={() => (dialog = "audioLang")}
+          >
+            {#snippet trailing()}
+              <svg class="w-4 h-4 text-white/30" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.chevronRight}</svg>
+            {/snippet}
+          </SettingRow>
+
           <SettingRow
             icon={ICONS.volumeUp}
             title={t().volumeBoost}
@@ -395,40 +442,56 @@
             {/snippet}
           </SettingRow>
 
-          <div class="px-4 pt-4 pb-2 flex items-center justify-between">
-            <span class="text-[11px] uppercase tracking-wider text-accent font-medium">{t().equalizer}</span>
-            <div class="flex items-center gap-3">
-              <button class="flex items-center gap-1 text-[11px] text-white/40 hover:text-white/80 transition-colors" onclick={resetEq} title={t().reset}>
-                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.restartAlt}</svg>
+          <div class="flex items-center gap-3 px-4 pt-5 pb-2">
+            <span class="text-[11px] uppercase tracking-wider text-white/35 font-medium shrink-0">{t().equalizer}</span>
+            <div class="flex-1 h-px bg-white/[0.07]"></div>
+            <button class="vayou-switch shrink-0" class:on={settings.equalizerEnabled} onclick={toggleEq} aria-label={t().equalizer}></button>
+          </div>
+
+          {#if settings.equalizerEnabled}
+            <div class="px-4 pb-2 flex items-start gap-2">
+              <div class="flex-1 flex gap-1.5 flex-wrap">
+                {#each Object.keys(eqPresets) as name}
+                  <button class="px-2.5 py-1 rounded-md text-xs transition-colors {activePreset === name ? 'bg-accent/20 text-accent' : 'bg-white/[0.06] hover:bg-white/[0.12] text-white/70'}" onclick={() => setPreset(name)}>{name}</button>
+                {/each}
+              </div>
+              <button
+                class="text-[11px] text-white/40 hover:text-white/80 transition-colors shrink-0 mt-1.5"
+                onclick={() => doReset(resetEq)}
+              >
                 {t().reset}
               </button>
-              <button class="vayou-switch" class:on={settings.equalizerEnabled} onclick={toggleEq} aria-label={t().equalizer}></button>
             </div>
-          </div>
 
-          <div class="px-4 pb-2 flex gap-1.5 flex-wrap">
-            {#each Object.keys(eqPresets) as name}
-              <button class="px-2.5 py-1 rounded-md text-xs bg-white/[0.06] hover:bg-white/[0.12] text-white/70 transition-colors" onclick={() => setPreset(name)}>{name}</button>
-            {/each}
-          </div>
-
-          <div class="px-4 pb-3 space-y-2.5">
-            {#each eqLabels as label, i}
-              <div class="flex items-center gap-3">
-                <span class="w-12 text-xs text-white/55 text-right shrink-0">{label}</span>
-                <input
-                  type="range" min="-12" max="12" step="1"
-                  bind:value={eqBands[i]}
-                  oninput={applyEq}
-                  class="s-range-bi flex-1"
-                  style={biStyle(eqBands[i], -12, 12)}
-                />
-                <span class="w-7 text-xs text-white/55 text-right tabular-nums shrink-0">{eqBands[i] > 0 ? "+" : ""}{eqBands[i]}</span>
-              </div>
-            {/each}
-          </div>
+            <div class="px-4 pb-3 space-y-2.5">
+              {#each eqLabels as label, i}
+                <div class="flex items-center gap-3">
+                  <span class="w-12 text-xs text-white/55 text-right shrink-0">{label}</span>
+                  <input
+                    type="range" min="-12" max="12" step="1"
+                    bind:value={eqBands[i]}
+                    oninput={applyEq}
+                    class="s-range-bi flex-1"
+                    style={biStyle(eqBands[i], -12, 12)}
+                  />
+                  <span class="w-7 text-xs text-white/55 text-right tabular-nums shrink-0">{eqBands[i] > 0 ? "+" : ""}{eqBands[i]}</span>
+                </div>
+              {/each}
+            </div>
+          {/if}
 
         {:else if tab === "subtitles"}
+          <SettingRow
+            icon={ICONS.language}
+            title={t().preferredSubtitle}
+            value={langDisplay(settings.preferredSubtitleLang)}
+            onclick={() => (dialog = "subLang")}
+          >
+            {#snippet trailing()}
+              <svg class="w-4 h-4 text-white/30" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.chevronRight}</svg>
+            {/snippet}
+          </SettingRow>
+
           <SettingRow
             icon={ICONS.formatColorText}
             title={t().subtitleEncoding}
@@ -457,13 +520,7 @@
             {/snippet}
           </SettingRow>
 
-          <div class="px-4 pt-4 pb-1 flex items-center justify-between">
-            <span class="text-[11px] uppercase tracking-wider text-accent font-medium">{t().style}</span>
-            <button class="flex items-center gap-1 text-[11px] text-white/40 hover:text-white/80 transition-colors" onclick={() => settings.resetSubStyle()} title={t().reset}>
-              <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.restartAlt}</svg>
-              {t().reset}
-            </button>
-          </div>
+          {@render sectionHeader(t().style, () => settings.resetSubStyle())}
 
           <SettingRow
             icon={ICONS.textFields}
@@ -542,9 +599,7 @@
 
         {:else if tab === "shortcuts"}
           {#each shortcutCategories as category}
-            <div class="px-4 pt-4 pb-1">
-              <span class="text-[11px] uppercase tracking-wider text-accent font-medium">{(t() as Record<string, string>)[category] ?? category}</span>
-            </div>
+            {@render sectionHeader((t() as Record<string, string>)[category] ?? category, null)}
             {#each keybindings.actions.filter((a) => a.category === category) as action}
               <div class="flex items-center px-4 py-2.5 hover:bg-white/[0.02]">
                 <span class="flex-1 text-[13px] text-white/85">{(t() as Record<string, string>)[action.i18nKey] ?? action.i18nKey}</span>
@@ -560,21 +615,71 @@
           {/each}
           <div class="px-4 py-3">
             <button
-              class="w-full py-2 text-xs text-white/55 hover:text-white/85 bg-white/[0.04] rounded-md hover:bg-white/[0.08] transition-colors"
-              onclick={() => { keybindings.resetAll(); settings.save(); }}
+              class="w-full py-2 text-xs rounded-md transition-colors text-white/55 hover:text-white/85 bg-white/[0.04] hover:bg-white/[0.08]"
+              onclick={() => doReset(() => { keybindings.resetAll(); settings.save(); })}
             >
               {t().resetShortcuts}
             </button>
           </div>
+        {:else if tab === "about"}
+          <div class="px-4 py-4">
+            <!-- App identity -->
+            <div class="px-1">
+              <div class="text-[22px] font-bold text-white/90 leading-tight">Vayou</div>
+              <div class="text-[12px] text-white/55 mt-0.5">{t().nativeVideoPlayer}</div>
+              <div class="text-[12px] text-white/35 mt-0.5">v{appVersion}</div>
+            </div>
+
+            <div class="h-px bg-white/[0.06] my-4"></div>
+
+            <!-- Updates -->
+            <div class="flex items-center gap-3 px-1">
+              <div class="flex-1 min-w-0">
+                <div class="text-[13px] text-white/90">{t().applicationUpdates}</div>
+                <div class="text-[11px] mt-0.5 {updateStatus === 3 || updateStatus === 6 ? 'text-accent' : 'text-white/55'}">
+                  {#if updateStatus === 1}{t().checkingUpdates}
+                  {:else if updateStatus === 2}{t().upToDate}
+                  {:else if updateStatus === 3}{t().updateAvailable} v{updateDetail}
+                  {:else if updateStatus === 4}{t().updateFailed} {updateDetail}
+                  {:else if updateStatus === 5}{t().downloadingUpdate}
+                  {:else if updateStatus === 6}{t().updateInstalled}
+                  {:else}{t().updateCheckHint}{/if}
+                </div>
+                {#if updateStatus === 4}
+                  <button class="text-[11px] text-accent hover:underline mt-1" onclick={() => openReleasePage()}>{t().openReleasesPage}</button>
+                {/if}
+              </div>
+              <button
+                class="px-3 py-1.5 text-xs rounded-md bg-white/[0.06] hover:bg-white/[0.10] text-white/85 hover:text-white/95 transition-colors disabled:opacity-50 disabled:cursor-default shrink-0"
+                disabled={updateStatus === 1 || updateStatus === 5}
+                onclick={updateAction}
+              >
+                {#if updateStatus === 6}{t().restartNow}
+                {:else if updateStatus === 3}{t().install}
+                {:else if updateStatus === 5}{t().installing}
+                {:else if updateStatus === 1}{t().checkingUpdates}
+                {:else}{t().checkForUpdates}{/if}
+              </button>
+            </div>
+
+            <div class="h-px bg-white/[0.06] my-4"></div>
+
+            <!-- Reset -->
+            <div class="flex items-center gap-3 px-1">
+              <div class="flex-1 min-w-0">
+                <div class="text-[13px] text-white/90">{t().restoreDefaults}</div>
+                <div class="text-[11px] text-white/55 mt-0.5">{t().restoreDefaultsDesc}</div>
+              </div>
+              <button
+                class="px-3 py-1.5 text-xs rounded-md transition-colors shrink-0 bg-white/[0.06] hover:bg-white/[0.10] text-white/85 hover:text-white/95"
+                onclick={() => doReset(resetAll)}
+              >
+                {t().restoreDefaults}
+              </button>
+            </div>
+          </div>
         {/if}
       </div>
-    </div>
-
-    <!-- Footer -->
-    <div class="flex items-center px-4 h-9 shrink-0">
-      <button class="text-[11px] text-white/35 hover:text-white/70 transition-colors" onclick={resetAll}>{t().restoreDefaults}</button>
-      <div class="flex-1"></div>
-      <span class="text-[11px] text-white/25">Vayou v0.1.0</span>
     </div>
   </div>
 

@@ -138,4 +138,23 @@ export default {
   welcomeTitle: "Vayou",
   welcomeSubtitle: "将文件拖放到此处或按",
   toOpen: "打开",
+
+  // About / Updates
+  about: "关于",
+  nativeVideoPlayer: "原生视频播放器",
+  applicationUpdates: "应用更新",
+  updateCheckHint: "检查是否有更新的版本。",
+  checkForUpdates: "检查更新",
+  checkingUpdates: "正在检查...",
+  upToDate: "已是最新版本。",
+  updateAvailable: "有可用更新:",
+  downloadingUpdate: "正在下载并验证...",
+  updateInstalled: "更新已安装。重启以应用。",
+  updateFailed: "无法更新:",
+  openReleasesPage: "打开发布页面",
+  install: "安装",
+  installing: "正在安装...",
+  restartNow: "立即重启",
+  restoreDefaultsDesc: "将所有设置恢复为默认值。",
+  restoredToDefaults: "已恢复为默认值",
 } satisfies Dict;

@@ -138,4 +138,23 @@ export default {
   welcomeTitle: "Vayou",
   welcomeSubtitle: "यहाँ फ़ाइल छोड़ें या दबाएँ",
   toOpen: "खोलने के लिए",
+
+  // About / Updates
+  about: "परिचय",
+  nativeVideoPlayer: "नेटिव वीडियो प्लेयर",
+  applicationUpdates: "एप्लिकेशन अपडेट",
+  updateCheckHint: "जांचें कि क्या कोई नया संस्करण उपलब्ध है।",
+  checkForUpdates: "अपडेट जांचें",
+  checkingUpdates: "जांच हो रही है...",
+  upToDate: "आप नवीनतम संस्करण पर हैं।",
+  updateAvailable: "अपडेट उपलब्ध:",
+  downloadingUpdate: "डाउनलोड और सत्यापन हो रहा है...",
+  updateInstalled: "अपडेट इंस्टॉल हुआ। लागू करने के लिए पुनः आरंभ करें।",
+  updateFailed: "अपडेट नहीं हो सका:",
+  openReleasesPage: "रिलीज़ पेज खोलें",
+  install: "इंस्टॉल करें",
+  installing: "इंस्टॉल हो रहा है...",
+  restartNow: "अभी पुनः आरंभ करें",
+  restoreDefaultsDesc: "सभी सेटिंग्स को डिफ़ॉल्ट मान पर रीसेट करें।",
+  restoredToDefaults: "डिफ़ॉल्ट पर रीसेट किया गया",
 } satisfies Dict;

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getTracks, selectAudioTrack, setAudioDelay, type TrackInfo } from "$lib/bindings/tracks";
   import { t } from "$lib/i18n/index.svelte";
-  import { langName } from "$lib/utils/lang-names";
+  import { trackLabel } from "$lib/utils/track-label";
   import { ICONS } from "$lib/icons";
 
   let { visible = $bindable(false) }: { visible: boolean } = $props();
@@ -48,12 +48,7 @@
           onclick={() => handleSelect(track.id)}
         >
           <svg class="w-4 h-4 shrink-0 mr-2 {track.selected ? 'opacity-100' : 'opacity-0'}" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.check}</svg>
-          <span class="flex-1 truncate">
-            {track.title || langName(track.lang) || `Track ${track.id}`}
-            {#if track.lang && track.title}
-              <span class="text-white/30 ml-1">[{langName(track.lang)}]</span>
-            {/if}
-          </span>
+          <span class="flex-1 truncate">{trackLabel(track.title, track.lang, track.codec, track.id)}</span>
         </button>
       {/each}
 

@@ -2,12 +2,11 @@
   import { getTracks, selectSubtitle, loadSubtitle, setSubtitleDelay, type TrackInfo } from "$lib/bindings/tracks";
   import { searchSubtitles, downloadSubtitle, type SubResult } from "$lib/bindings/opensubtitles";
   import { open } from "@tauri-apps/plugin-dialog";
-  import Select from "./Select.svelte";
   import { t } from "$lib/i18n/index.svelte";
   import { settings, subFonts } from "$lib/stores/settings.svelte";
   import { player } from "$lib/stores/player.svelte";
   import { translate } from "$lib/stores/translate.svelte";
-  import { langName } from "$lib/utils/lang-names";
+  import { trackLabel } from "$lib/utils/track-label";
   import { ICONS } from "$lib/icons";
 
   let { visible = $bindable(false) }: { visible: boolean } = $props();
@@ -137,7 +136,7 @@
 
   let tracks = $state<TrackInfo[]>([]);
   let delay = $state(0);
-  let page = $state<"main" | "style" | "search" | "searchLang" | "translateLang">("main");
+  let page = $state<"main" | "style" | "subfont" | "search" | "searchLang" | "translateLang">("main");
 
   const noSubSelected = $derived(tracks.length === 0 || tracks.every((t) => !t.selected));
   const translateOff = $derived(settings.translateLang === "off");
@@ -222,12 +221,7 @@
             onclick={() => handleSelect(track.id)}
           >
             <svg class="w-4 h-4 shrink-0 mr-2 {track.selected ? 'opacity-100' : 'opacity-0'}" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.check}</svg>
-            <span class="flex-1 truncate">
-              {track.title || langName(track.lang) || `Track ${track.id}`}
-              {#if track.lang && track.title && !isAuto}
-                <span class="text-white/30 ml-1">[{langName(track.lang)}]</span>
-              {/if}
-            </span>
+            <span class="flex-1 truncate">{trackLabel(track.title, track.lang, track.codec, track.id)}</span>
             {#if isAuto}
               <span class="ml-2 px-1.5 py-0.5 rounded bg-accent/15 text-accent text-[9px] font-semibold tracking-wider uppercase">Auto</span>
             {/if}
@@ -312,10 +306,17 @@
 
       <!-- Style controls -->
       <div class="flex-1 overflow-y-auto p-3 space-y-3">
-        <div>
-          <span class="text-white/50 text-xs block mb-1">{t().font}</span>
-          <Select items={subFonts} value={settings.subFont} itemStyle={(f) => `font-family:'${f}'`} onchange={(f) => { settings.subFont = f; settings.applySubStyle(); }} />
-        </div>
+        <button
+          type="button"
+          class="w-full flex items-center justify-between text-left text-white/85 text-xs"
+          onclick={() => page = "subfont"}
+        >
+          <span>{t().font}</span>
+          <span class="flex items-center gap-1 text-white/85" style="font-family:'{settings.subFont}'">
+            {settings.subFont}
+            <svg class="w-4 h-4 text-white/30 shrink-0" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.chevronRight}</svg>
+          </span>
+        </button>
 
         <button
           type="button"
@@ -360,6 +361,24 @@
           </div>
           <input type="range" min="0" max="100" bind:value={settings.subPosition} oninput={() => settings.applySubStyle()} class="s-range w-full" style="--val: {settings.subPosition}%" />
         </div>
+      </div>
+    {:else if page === "subfont"}
+      <!-- Font picker -->
+      <div class="flex items-center px-3 py-2">
+        <button class="ctrl-btn w-6 h-6 text-xs mr-2 hover:bg-white/10 rounded-md" onclick={() => page = "style"}>←</button>
+        <span class="font-medium text-xs">{t().font}</span>
+      </div>
+      <div class="flex-1 overflow-y-auto">
+        {#each subFonts as f}
+          <button
+            class="w-full flex items-center gap-3 px-3 py-2 hover:bg-white/8 text-left {settings.subFont === f ? 'text-accent' : 'text-white/85'}"
+            style="font-family:'{f}'"
+            onclick={() => { settings.subFont = f; settings.applySubStyle(); page = "style"; }}
+          >
+            <svg class="w-4 h-4 shrink-0 {settings.subFont === f ? 'opacity-100 text-accent' : 'opacity-0'}" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.check}</svg>
+            <span class="flex-1">{f}</span>
+          </button>
+        {/each}
       </div>
     {:else if page === "translateLang"}
       <!-- Each language IS the action: click translates immediately to that

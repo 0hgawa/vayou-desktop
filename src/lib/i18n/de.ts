@@ -138,4 +138,23 @@ export default {
   welcomeTitle: "Vayou",
   welcomeSubtitle: "Datei hier ablegen oder drücken Sie",
   toOpen: "zum Öffnen",
+
+  // About / Updates
+  about: "Über",
+  nativeVideoPlayer: "Nativer Videoplayer",
+  applicationUpdates: "Anwendungsupdates",
+  updateCheckHint: "Prüfen, ob eine neuere Version verfügbar ist.",
+  checkForUpdates: "Nach Updates suchen",
+  checkingUpdates: "Wird geprüft...",
+  upToDate: "Du verwendest die neueste Version.",
+  updateAvailable: "Update verfügbar:",
+  downloadingUpdate: "Wird heruntergeladen und überprüft...",
+  updateInstalled: "Update installiert. Zum Anwenden neu starten.",
+  updateFailed: "Update fehlgeschlagen:",
+  openReleasesPage: "Releases-Seite öffnen",
+  install: "Installieren",
+  installing: "Wird installiert...",
+  restartNow: "Jetzt neu starten",
+  restoreDefaultsDesc: "Alle Einstellungen auf die Standardwerte zurücksetzen.",
+  restoredToDefaults: "Auf Standardwerte zurückgesetzt",
 } satisfies Dict;

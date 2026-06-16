@@ -6,5 +6,6 @@ pub mod settings;
 pub mod subtitle_extract;
 pub mod tracks;
 pub mod translate;
+pub mod update;
 pub mod opensubtitles;
 pub mod video;

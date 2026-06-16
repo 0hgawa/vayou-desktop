@@ -26,6 +26,8 @@ reqwest = { version = "0.12", features = ["json"] }
 urlencoding = "2"
 flate2 = "1"
 tokio = { version = "1", features = ["time", "process"] }
+minisign-verify = "0.2"
+self-replace = "1"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows = { version = "0.58", features = ["Win32_Foundation"] }

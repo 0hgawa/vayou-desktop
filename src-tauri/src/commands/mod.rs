@@ -5,6 +5,7 @@ pub mod playlist;
 pub mod settings;
 pub mod tracks;
 pub mod translate;
+pub mod update;
 pub mod opensubtitles;
 pub mod video;
 pub mod window;

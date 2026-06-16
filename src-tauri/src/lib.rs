@@ -110,6 +110,11 @@ pub fn run() {
             // OpenSubtitles
             commands::opensubtitles::search_subtitles,
             commands::opensubtitles::download_subtitle,
+            // Updates (signed self-update)
+            commands::update::check_update,
+            commands::update::install_update,
+            commands::update::relaunch_app,
+            commands::update::open_release_page,
             // Window
             commands::window::toggle_fullscreen,
             commands::window::set_always_on_top,

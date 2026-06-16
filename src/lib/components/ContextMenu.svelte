@@ -1,9 +1,9 @@
 ﻿<script lang="ts">
   import { player } from "$lib/stores/player.svelte";
   import { t } from "$lib/i18n/index.svelte";
-  import { langName } from "$lib/utils/lang-names";
+  import { trackLabel } from "$lib/utils/track-label";
   import {
-    togglePause, stop, screenshot,
+    screenshot,
     getChapters, seekChapter,
     setSpeed, type Chapter,
   } from "$lib/bindings/playback";
@@ -158,11 +158,6 @@
       <button class="ctx-item text-white/90" onclick={() => act(onopen)}>{@render ctxIcon(ICONS.folderOpen)}{t().openFile}<span class="ctx-key">Ctrl+O</span></button>
       <button class="ctx-item text-white/90" onclick={() => act(onopenurl)}>{@render ctxIcon(ICONS.link)}{t().openUrl}<span class="ctx-key">Ctrl+U</span></button>
       <div class="ctx-sep"></div>
-      <button class="ctx-item text-white/90" onclick={() => act(() => togglePause())}>
-        {@render ctxIcon(player.playing ? ICONS.pause : ICONS.play)}{player.playing ? t().pause : t().play}<span class="ctx-key">Space</span>
-      </button>
-      <button class="ctx-item text-white/90" onclick={() => act(() => stop())}>{@render ctxIcon(ICONS.stop)}{t().stop}</button>
-      <div class="ctx-sep"></div>
       {#if subTracks.length > 0}
         <button class="ctx-item text-white/90" onclick={() => page = "sub"}>{@render ctxIcon(ICONS.subtitles)}{t().subtitles}<span class="ctx-arrow">▸</span></button>
       {/if}
@@ -180,9 +175,7 @@
         <span class="ctx-key">L</span>
       </button>
       <button class="ctx-item text-white/90" onclick={handleScreenshot}>{@render ctxIcon(ICONS.camera)}{t().screenshot}<span class="ctx-key">S</span></button>
-      <div class="ctx-sep"></div>
       <button class="ctx-item text-white/90" onclick={() => { onclose(); onpanel("info"); }}>{@render ctxIcon(ICONS.info)}{t().mediaInfo}<span class="ctx-key">I</span></button>
-      <button class="ctx-item text-white/90" onclick={() => { onclose(); onpanel("settings"); }}>{@render ctxIcon(ICONS.settings)}{t().settings}</button>
       <div class="ctx-sep"></div>
       <button class="ctx-item text-white/90" onclick={() => page = "sleep"}>
         {@render ctxIcon(ICONS.timer, sleepTimer.formatted !== null)}{t().sleepTimer}
@@ -195,6 +188,7 @@
       <button class="ctx-item text-white/90" onclick={handleAlwaysOnTop}>
         {@render ctxIcon(ICONS.pushPin, alwaysOnTop)}{t().alwaysOnTop}
       </button>
+      <button class="ctx-item text-white/90" onclick={() => { onclose(); onpanel("settings"); }}>{@render ctxIcon(ICONS.settings)}{t().settings}</button>
 
     {:else if page === "sub"}
       <button class="ctx-back" onclick={() => page = "main"}>← {t().subtitles}</button>
@@ -204,7 +198,7 @@
       </button>
       {#each subTracks as t}
         <button class="ctx-item {t.selected ? 'text-accent' : 'text-white/90'}" onclick={() => { selectSubtitle(t.id); onclose(); }}>
-          {@render ctxCheck(t.selected)}{t.title || langName(t.lang) || `Track ${t.id}`}
+          {@render ctxCheck(t.selected)}{trackLabel(t.title, t.lang, t.codec, t.id)}
         </button>
       {/each}
 
@@ -213,7 +207,7 @@
       <div class="ctx-sep"></div>
       {#each audioTracks as t}
         <button class="ctx-item {t.selected ? 'text-accent' : 'text-white/90'}" onclick={() => { selectAudioTrack(t.id); onclose(); }}>
-          {@render ctxCheck(t.selected)}{t.title || langName(t.lang) || `Track ${t.id}`}
+          {@render ctxCheck(t.selected)}{trackLabel(t.title, t.lang, t.codec, t.id)}
         </button>
       {/each}
 

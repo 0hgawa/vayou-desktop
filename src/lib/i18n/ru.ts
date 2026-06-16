@@ -138,4 +138,23 @@ export default {
   welcomeTitle: "Vayou",
   welcomeSubtitle: "Перетащите файл сюда или нажмите",
   toOpen: "чтобы открыть",
+
+  // About / Updates
+  about: "О программе",
+  nativeVideoPlayer: "Нативный видеоплеер",
+  applicationUpdates: "Обновления приложения",
+  updateCheckHint: "Проверить наличие более новой версии.",
+  checkForUpdates: "Проверить обновления",
+  checkingUpdates: "Проверка...",
+  upToDate: "У вас последняя версия.",
+  updateAvailable: "Доступно обновление:",
+  downloadingUpdate: "Загрузка и проверка...",
+  updateInstalled: "Обновление установлено. Перезапустите для применения.",
+  updateFailed: "Не удалось обновить:",
+  openReleasesPage: "Открыть страницу релизов",
+  install: "Установить",
+  installing: "Установка...",
+  restartNow: "Перезапустить сейчас",
+  restoreDefaultsDesc: "Сбросить все настройки до значений по умолчанию.",
+  restoredToDefaults: "Сброшено к значениям по умолчанию",
 } satisfies Dict;
