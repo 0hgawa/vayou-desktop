@@ -32,7 +32,7 @@
 <!-- Icon + slider as one unit: the hover pill wraps both (YouTube-style),
      so the highlight and expansion cover the whole control, not just the icon. -->
 <div class="flex items-center group h-9 rounded-full transition-colors hover:bg-white/[0.12]">
-  <button onclick={toggleMute} class="w-9 h-9 shrink-0 flex items-center justify-center text-white/85 hover:text-white transition-colors" title={player.muted ? "Unmute" : "Mute"}>
+  <button onclick={toggleMute} class="vol-btn w-9 h-9 shrink-0 flex items-center justify-center text-white/85 hover:text-white transition-colors" title={player.muted ? "Unmute" : "Mute"}>
     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
       {@html player.muted || player.volume === 0 ? ICONS.volumeOff : ICONS.volumeUp}
     </svg>

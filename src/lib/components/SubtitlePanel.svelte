@@ -188,6 +188,11 @@
     delay = +(delay + delta).toFixed(1);
     setSubtitleDelay(delay);
   }
+  function resetDelay() {
+    if (delay === 0) return;
+    delay = 0;
+    setSubtitleDelay(0);
+  }
 </script>
 
 {#if visible}
@@ -290,7 +295,7 @@
         <svg class="w-4 h-4 text-white/55" fill="currentColor" viewBox="0 0 24 24"><path d="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42A8.962 8.962 0 0 0 12 4c-4.97 0-9 4.03-9 9s4.02 9 9 9s9-4.03 9-9c0-2.12-.74-4.07-1.97-5.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7s7 3.13 7 7s-3.13 7-7 7z"/></svg>
         <span class="flex-1">{t().delay}</span>
         <button class="ctrl-btn w-6 h-6 text-xs" onclick={() => handleDelayChange(-0.1)}>−</button>
-        <span class="w-12 text-center tabular-nums text-xs">{delay.toFixed(1)}s</span>
+        <button class="w-12 h-6 inline-flex items-center justify-center rounded-full tabular-nums text-xs cursor-pointer transition-colors hover:bg-white/10 {delay !== 0 ? 'text-accent' : 'text-white/85'}" onclick={resetDelay} title={t().reset}>{delay.toFixed(1)}s</button>
         <button class="ctrl-btn w-6 h-6 text-xs" onclick={() => handleDelayChange(0.1)}>+</button>
       </div>
       </div>

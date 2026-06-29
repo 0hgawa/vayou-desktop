@@ -63,17 +63,35 @@ html, body {
   border: none;
   background: transparent;
   color: rgba(255, 255, 255, 0.85);
-  border-radius: var(--radius-sm);
-  transition: all var(--motion-normal) ease;
+  /* Round at rest (invisible while transparent) so the shape never changes
+     between states — only the background/color animate, no radius morph. */
+  border-radius: 9999px;
+  transition: background-color var(--motion-normal) ease,
+              color var(--motion-normal) ease;
 }
 .ctrl-btn:hover {
   background: rgba(255, 255, 255, 0.18);
   color: white;
-  border-radius: 9999px;
 }
-/* TitleBar window controls keep the rectangular hover (Windows convention) */
-.titlebar .ctrl-btn:hover {
+/* No square default ring on click; keyboard focus gets a round ring.
+   `.vol-btn` is the mute button — its hover highlight lives on the wrapper
+   pill, so it isn't a `.ctrl-btn`, but it shares the same focus treatment. */
+.vol-btn { border-radius: 9999px; }
+.ctrl-btn:focus,
+.vol-btn:focus { outline: none; }
+.ctrl-btn:focus-visible,
+.vol-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 1px;
+}
+/* TitleBar window controls stay rectangular (Windows convention). */
+.titlebar .ctrl-btn {
   border-radius: var(--radius-sm);
+}
+/* Active toggle tint. `.ctrl-btn` sets `color`, so a utility `text-accent`
+   would lose to it; this rule's higher specificity wins (and holds on hover). */
+.ctrl-btn.is-accent {
+  color: var(--color-accent);
 }
 
 .seek-track {

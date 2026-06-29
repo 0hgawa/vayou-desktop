@@ -56,7 +56,10 @@
 
     if (!player.fullscreen) { player.controlsVisible = true; return; }
     if (document.querySelector("[data-panel]")) { player.controlsVisible = true; return; }
-    player.controlsVisible = e.clientY <= 50 || e.clientY >= window.innerHeight - 80;
+    // Keep visible while the pointer is over a control bar (covers the taller
+    // bar when the A-B loop row is shown), otherwise use the top/bottom reveal zones.
+    const overControls = !!(e.target as Element | null)?.closest?.(".controls-overlay");
+    player.controlsVisible = overControls || e.clientY <= 50 || e.clientY >= window.innerHeight - 80;
     if (player.playing) cursorTimer = setTimeout(() => { cursorVisible = false; }, 500);
   }
 

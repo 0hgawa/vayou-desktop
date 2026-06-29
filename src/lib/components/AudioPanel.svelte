@@ -27,6 +27,11 @@
     delay = +(delay + delta).toFixed(1);
     setAudioDelay(delay);
   }
+  function resetDelay() {
+    if (delay === 0) return;
+    delay = 0;
+    setAudioDelay(0);
+  }
 </script>
 
 {#if visible}
@@ -63,7 +68,7 @@
         <span class="text-white/50">{t().delay}</span>
         <div class="flex items-center gap-1">
           <button class="ctrl-btn w-6 h-6 text-xs" onclick={() => handleDelayChange(-0.1)}>-</button>
-          <span class="w-14 text-center tabular-nums text-xs">{delay.toFixed(1)}s</span>
+          <button class="w-14 h-6 inline-flex items-center justify-center rounded-full tabular-nums text-xs cursor-pointer transition-colors hover:bg-white/10 {delay !== 0 ? 'text-accent' : 'text-white/90'}" onclick={resetDelay} title={t().reset}>{delay.toFixed(1)}s</button>
           <button class="ctrl-btn w-6 h-6 text-xs" onclick={() => handleDelayChange(0.1)}>+</button>
         </div>
       </div>

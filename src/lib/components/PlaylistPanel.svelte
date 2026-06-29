@@ -151,26 +151,26 @@
     <!-- Controls -->
     <div class="flex items-center px-2 py-1.5 gap-1">
       <button
-        class="flex items-center justify-center w-7 h-7 rounded-md border-none transition-all {shuffle ? 'bg-accent/20 text-accent' : 'bg-transparent text-white/50'}"
+        class="ctrl-btn w-7 h-7" class:is-accent={shuffle}
         title={t().shuffle} onclick={toggleShuffle}
       >
         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4L4 5.41l5.17 5.17l1.42-1.41zM14.5 4l2.04 2.04L4 18.59L5.41 20L17.96 7.46L20 9.5V4h-5.5zm.33 9.41l-1.41 1.41l3.13 3.13L14.5 20H20v-5.5l-2.04 2.04l-3.13-3.13z"/></svg>
       </button>
       <button
-        class="flex items-center justify-center w-7 h-7 rounded-md border-none transition-all relative {repeatMode !== 'off' ? 'bg-accent/20 text-accent' : 'bg-transparent text-white/50'}"
+        class="ctrl-btn relative w-7 h-7" class:is-accent={repeatMode !== 'off'}
         title="{t().repeat}: {repeatMode}" onclick={cycleRepeat}
       >
         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M7 7h10v3l4-4l-4-4v3H5v6h2V7zm10 10H7v-3l-4 4l4 4v-3h12v-6h-2v4z"/></svg>
         {#if repeatMode === "one"}<span class="absolute -bottom-0.5 -right-0.5 text-[7px] font-bold bg-accent text-black rounded-full w-3 h-3 flex items-center justify-center">1</span>{/if}
       </button>
       <div class="flex-1"></div>
-      <button class="ctrl-btn w-7 h-7 rounded-md hover:bg-white/10 text-white/50 hover:text-white/90" title={t().addFiles} onclick={handleAddFiles}>
+      <button class="ctrl-btn w-7 h-7 text-white/50" title={t().addFiles} onclick={handleAddFiles}>
         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
       </button>
-      <button class="ctrl-btn w-7 h-7 rounded-md hover:bg-white/10 text-white/50 hover:text-white/90" title={t().addFolder} onclick={handleAddFolder}>
+      <button class="ctrl-btn w-7 h-7 text-white/50" title={t().addFolder} onclick={handleAddFolder}>
         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M9.17 6l2 2H20v10H4V6h5.17M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
       </button>
-      <button class="ctrl-btn w-7 h-7 rounded-md hover:bg-white/10 text-white/50 hover:text-red-400" title={t().clear} onclick={handleClear}>
+      <button class="ctrl-btn w-7 h-7 text-white/50 hover:text-red-400" title={t().clear} onclick={handleClear}>
         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"/></svg>
       </button>
     </div>

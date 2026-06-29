@@ -125,14 +125,14 @@
       <div class="flex-1"></div>
 
       <!-- Subtitle -->
-      <button onclick={() => togglePanel("sub")} class="ctrl-btn w-9 h-9 {subPanelVisible ? 'text-accent' : ''}" title="{t().subtitles} (V)">
+      <button onclick={() => togglePanel("sub")} class="ctrl-btn w-9 h-9" class:is-accent={subPanelVisible} title="{t().subtitles} (V)">
         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
           <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12zM6 10h2v2H6zm0 4h8v2H6zm10 0h2v2h-2zm-6-4h8v2h-8z" />
         </svg>
       </button>
 
       <!-- Audio -->
-      <button onclick={() => togglePanel("audio")} class="ctrl-btn w-9 h-9 {audioPanelVisible ? 'text-accent' : ''}" title="{t().audio} (A)">
+      <button onclick={() => togglePanel("audio")} class="ctrl-btn w-9 h-9" class:is-accent={audioPanelVisible} title="{t().audio} (A)">
         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
           <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55c-2.21 0-4 1.79-4 4s1.79 4 4 4s4-1.79 4-4V7h4V3h-6zm-2 16c-1.1 0-2-.9-2-2s.9-2 2-2s2 .9 2 2s-.9 2-2 2z" />
         </svg>
@@ -142,21 +142,21 @@
       <button
         bind:this={speedBtnEl}
         onclick={() => { closeAll(); speedDropOpen = !speedDropOpen; }}
-        class="ctrl-btn h-9 px-2 text-sm font-medium {speedDropOpen ? 'text-accent' : ''}"
+        class="ctrl-btn h-9 px-2 text-sm font-medium" class:is-accent={speedDropOpen}
         title="{t().playbackSpeed}"
       >
         {player.speed}x
       </button>
 
       <!-- Playlist -->
-      <button onclick={() => togglePanel("playlist")} class="ctrl-btn w-9 h-9 {playlistPanelVisible ? 'text-accent' : ''}" title="{t().playlist}">
+      <button onclick={() => togglePanel("playlist")} class="ctrl-btn w-9 h-9" class:is-accent={playlistPanelVisible} title="{t().playlist}">
         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
           <path d="M3 10h11v2H3zm0-4h11v2H3zm0 8h7v2H3zm13-1v8l6-4z" />
         </svg>
       </button>
 
       <!-- Settings -->
-      <button onclick={() => togglePanel("settings")} class="ctrl-btn w-9 h-9 {settingsPanelVisible ? 'text-accent' : ''}" title="{t().settings}">
+      <button onclick={() => togglePanel("settings")} class="ctrl-btn w-9 h-9" class:is-accent={settingsPanelVisible} title="{t().settings}">
         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.settings}</svg>
       </button>
 
