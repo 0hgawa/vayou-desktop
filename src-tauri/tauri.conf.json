@@ -44,7 +44,7 @@
         "installerIcon": "icons/icon.ico",
         "headerImage": "icons/nsis-header.bmp",
         "sidebarImage": "icons/nsis-sidebar.bmp",
-        "installMode": "perMachine",
+        "installMode": "currentUser",
         "installerHooks": "installer-hooks.nsh"
       }
     }
