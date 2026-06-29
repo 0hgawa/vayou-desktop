@@ -248,9 +248,8 @@ fn ms_to_srt(ms: u64) -> String {
 }
 
 fn find_ffmpeg() -> Option<String> {
-    // Bundled name differs per OS. On Windows we ship ffmpeg.exe alongside
-    // the binary; on Linux/macOS we expect the system one.
-    let bundled = if cfg!(windows) { "ffmpeg.exe" } else { "ffmpeg" };
+    // We ship ffmpeg.exe alongside the binary.
+    let bundled = "ffmpeg.exe";
     if let Some(dir) = std::env::current_exe().ok().and_then(|p| p.parent().map(|d| d.to_path_buf())) {
         for sub in ["", "binaries"] {
             let p = dir.join(sub).join(bundled);
@@ -259,14 +258,9 @@ fn find_ffmpeg() -> Option<String> {
     }
     if ffmpeg_on_path() { return Some("ffmpeg".into()); }
 
-    #[cfg(target_os = "windows")]
     for base in ["C:/ffmpeg/bin", "C:/Program Files/ffmpeg/bin"] {
         let p = format!("{base}/ffmpeg.exe");
         if Path::new(&p).exists() { return Some(p); }
-    }
-    #[cfg(not(target_os = "windows"))]
-    for p in ["/usr/bin/ffmpeg", "/usr/local/bin/ffmpeg", "/opt/homebrew/bin/ffmpeg"] {
-        if Path::new(p).exists() { return Some(p.to_string()); }
     }
     None
 }

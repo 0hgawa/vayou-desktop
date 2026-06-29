@@ -108,19 +108,12 @@ fn verify_signature(bytes: &[u8], signature: &str) -> Result<(), String> {
 /// in-app update can't be applied.
 pub fn open_release_page() {
     let url = format!("https://github.com/{REPO}/releases");
-    #[cfg(target_os = "windows")]
-    {
-        use std::os::windows::process::CommandExt;
-        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
-        let _ = std::process::Command::new("cmd")
-            .args(["/c", "start", "", &url])
-            .creation_flags(CREATE_NO_WINDOW)
-            .spawn();
-    }
-    #[cfg(target_os = "linux")]
-    let _ = std::process::Command::new("xdg-open").arg(&url).spawn();
-    #[cfg(target_os = "macos")]
-    let _ = std::process::Command::new("open").arg(&url).spawn();
+    use std::os::windows::process::CommandExt;
+    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+    let _ = std::process::Command::new("cmd")
+        .args(["/c", "start", "", &url])
+        .creation_flags(CREATE_NO_WINDOW)
+        .spawn();
 }
 
 #[cfg(test)]

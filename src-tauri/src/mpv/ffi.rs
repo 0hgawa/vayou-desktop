@@ -59,16 +59,9 @@ impl MpvFfi {
     fn load() -> Result<Self, MpvError> {
         info!("Loading libmpv");
 
-        // Per-OS file-name candidates. We bundle libmpv-2.dll on Windows; on
-        // Linux we depend on the system package (libmpv2 / libmpv1) and on
-        // macOS on the Homebrew install. The first name that loads wins —
-        // older soversions are kept as fallback for distros still on libmpv1.
-        #[cfg(target_os = "windows")]
+        // We bundle libmpv-2.dll next to the binary; `mpv-2.dll` is kept as a
+        // fallback name. The first that loads wins.
         const LIB_CANDIDATES: &[&str] = &["libmpv-2.dll", "mpv-2.dll"];
-        #[cfg(target_os = "linux")]
-        const LIB_CANDIDATES: &[&str] = &["libmpv.so.2", "libmpv.so.1", "libmpv.so"];
-        #[cfg(target_os = "macos")]
-        const LIB_CANDIDATES: &[&str] = &["libmpv.2.dylib", "libmpv.1.dylib", "libmpv.dylib"];
 
         let lib = unsafe {
             let exe_dir = std::env::current_exe()
@@ -84,7 +77,7 @@ impl MpvFfi {
                     }
                 }
             }
-            // 2. system loader (Linux/macOS use this; Windows finds nothing here)
+            // 2. system loader (PATH / system dirs) as a fallback
             if loaded.is_none() {
                 for name in LIB_CANDIDATES {
                     if let Ok(l) = Library::new(name) {

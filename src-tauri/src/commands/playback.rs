@@ -23,43 +23,12 @@ pub async fn init_player(
         .get_webview_window("main")
         .ok_or_else(|| AppError::FileNotFound("main window not found".into()))?;
 
-    #[cfg(target_os = "windows")]
+    // Embed mpv into the Tauri window via its Win32 HWND.
     let hwnd_val = {
         let hwnd = window
             .hwnd()
             .map_err(|e| AppError::Config(format!("HWND: {e}")))?;
         hwnd.0 as i64
-    };
-
-    // On Linux we embed mpv into the Tauri window via its X11 Window ID.
-    // raw-window-handle abstracts Xlib vs Xcb. Wayland is forced to XWayland
-    // via GDK_BACKEND=x11 at startup (see lib.rs) — if a Wayland handle still
-    // shows up here, the user has overridden the env var and we bail out
-    // because native Wayland needs mpv_render_context (not in this version).
-    #[cfg(target_os = "linux")]
-    let hwnd_val: i64 = {
-        use raw_window_handle::{HasWindowHandle, RawWindowHandle};
-        let handle = window
-            .window_handle()
-            .map_err(|e| AppError::Config(format!("window_handle: {e}")))?;
-        match handle.as_raw() {
-            RawWindowHandle::Xlib(h) => h.window as i64,
-            RawWindowHandle::Xcb(h) => h.window.get() as i64,
-            RawWindowHandle::Wayland(_) => {
-                return Err(AppError::Config(
-                    "Wayland native is not supported in this version. \
-                     Launch with: GDK_BACKEND=x11 vayou-desktop"
-                        .into(),
-                ));
-            }
-            _ => return Err(AppError::Config("unsupported window handle on Linux".into())),
-        }
-    };
-
-    #[cfg(target_os = "macos")]
-    let hwnd_val: i64 = {
-        let _ = window;
-        return Err(AppError::Config("macOS is not supported yet".into()));
     };
 
     let mpv = MpvPlayer::new(hwnd_val)?;

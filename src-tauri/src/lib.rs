@@ -9,14 +9,6 @@ use tracing_subscriber::EnvFilter;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // Force GTK/Tauri to use the X11 backend even on Wayland sessions, so the
-    // X11 Window ID we hand to mpv exists. Native Wayland would need
-    // mpv_render_context, which is out of scope for v0.1.x.
-    #[cfg(target_os = "linux")]
-    if std::env::var_os("GDK_BACKEND").is_none() {
-        std::env::set_var("GDK_BACKEND", "x11");
-    }
-
     tracing_subscriber::fmt()
         .with_env_filter(
             EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("vayou=info")),
