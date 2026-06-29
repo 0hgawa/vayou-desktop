@@ -1,6 +1,6 @@
 [package]
 name = "vayou-desktop"
-version = "0.1.0"
+version = "0.1.1"
 description = "Vayou — Ultra-performant video player"
 edition = "2021"
 
