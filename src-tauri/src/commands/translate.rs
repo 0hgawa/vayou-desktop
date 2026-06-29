@@ -7,7 +7,7 @@ use tracing::{info, warn};
 use crate::error::AppError;
 use crate::mpv::player::MpvPlayer;
 use crate::services::{subtitle_extract, tracks::TracksService, translate};
-use crate::state::{AppState, MpvState};
+use crate::state::MpvState;
 
 /// Caps the number of concurrent HTTP requests to Google Translate. Higher
 /// numbers trigger 429 rate-limits that look like the whole pipeline froze.
@@ -68,7 +68,7 @@ fn remove_previous_translation(mpv: &MpvPlayer) -> Option<i64> {
 #[tauri::command]
 pub async fn translate_subtitles(
     target_lang: String, app: tauri::AppHandle,
-    mpv_state: State<'_, MpvState>, app_state: State<'_, AppState>,
+    mpv_state: State<'_, MpvState>,
 ) -> Result<String, AppError> {
     let my_run = current_run_id().fetch_add(1, Ordering::SeqCst) + 1;
     info!(target_lang = %target_lang, run = my_run, "translate_subtitles: START");
@@ -81,7 +81,11 @@ pub async fn translate_subtitles(
     // translation manually.
     let prev_translation_source = remove_previous_translation(mpv);
 
-    let video_path = app_state.with(|_, f| f.clone())?
+    // Resolve the video from what mpv is ACTUALLY playing — not app_state's
+    // current_file, which only tracks explicit opens and goes stale on
+    // playlist navigation (we'd translate the previous episode's subs).
+    let video_path = mpv.get_property_string("path").ok()
+        .filter(|p| !p.is_empty())
         .ok_or_else(|| AppError::Config("No file playing".into()))?;
     info!(video = %video_path, "translate_subtitles: video resolved");
 
