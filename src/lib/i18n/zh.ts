@@ -157,4 +157,9 @@ export default {
   restartNow: "立即重启",
   restoreDefaultsDesc: "将所有设置恢复为默认值。",
   restoredToDefaults: "已恢复为默认值",
+  subErrImageBased: "此字幕为图像格式，无法翻译。",
+  subErrRateLimited: "翻译失败 — 服务繁忙，请稍后重试。",
+  subErrNoTrack: "未选择字幕轨道。",
+  subErrNoEntries: "未找到可翻译的字幕文本。",
+  subErrNoFile: "没有正在播放的文件。",
 } satisfies Dict;

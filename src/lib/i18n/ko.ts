@@ -157,4 +157,9 @@ export default {
   restartNow: "지금 다시 시작",
   restoreDefaultsDesc: "모든 설정을 기본값으로 되돌립니다.",
   restoredToDefaults: "기본값으로 복원되었습니다",
+  subErrImageBased: "이 자막은 이미지 기반이라 번역할 수 없습니다.",
+  subErrRateLimited: "번역 실패 — 서비스가 혼잡합니다. 잠시 후 다시 시도하세요.",
+  subErrNoTrack: "선택된 자막 트랙이 없습니다.",
+  subErrNoEntries: "번역할 자막 텍스트를 찾을 수 없습니다.",
+  subErrNoFile: "재생 중인 파일이 없습니다.",
 } satisfies Dict;

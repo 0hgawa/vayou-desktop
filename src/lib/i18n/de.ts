@@ -157,4 +157,9 @@ export default {
   restartNow: "Jetzt neu starten",
   restoreDefaultsDesc: "Alle Einstellungen auf die Standardwerte zurücksetzen.",
   restoredToDefaults: "Auf Standardwerte zurückgesetzt",
+  subErrImageBased: "Diese Untertitel sind bildbasiert und können nicht übersetzt werden.",
+  subErrRateLimited: "Übersetzung fehlgeschlagen – der Dienst ist ausgelastet. Versuche es gleich erneut.",
+  subErrNoTrack: "Keine Untertitelspur ausgewählt.",
+  subErrNoEntries: "Kein Untertiteltext zum Übersetzen gefunden.",
+  subErrNoFile: "Es wird keine Datei abgespielt.",
 } satisfies Dict;

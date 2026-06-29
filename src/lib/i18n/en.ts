@@ -156,4 +156,9 @@ export default {
   restartNow: "Restart now",
   restoreDefaultsDesc: "Reset every setting to its default value.",
   restoredToDefaults: "Restored to defaults",
+  subErrImageBased: "These subtitles are image-based and can't be translated.",
+  subErrRateLimited: "Translation failed — the service is busy. Try again in a moment.",
+  subErrNoTrack: "No subtitle track selected.",
+  subErrNoEntries: "No subtitle text found to translate.",
+  subErrNoFile: "No file is playing.",
 } as const;

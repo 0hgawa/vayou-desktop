@@ -157,4 +157,9 @@ export default {
   restartNow: "अभी पुनः आरंभ करें",
   restoreDefaultsDesc: "सभी सेटिंग्स को डिफ़ॉल्ट मान पर रीसेट करें।",
   restoredToDefaults: "डिफ़ॉल्ट पर रीसेट किया गया",
+  subErrImageBased: "ये उपशीर्षक छवि-आधारित हैं और इनका अनुवाद नहीं किया जा सकता।",
+  subErrRateLimited: "अनुवाद विफल — सेवा व्यस्त है। कुछ देर बाद पुनः प्रयास करें।",
+  subErrNoTrack: "कोई उपशीर्षक ट्रैक चयनित नहीं है।",
+  subErrNoEntries: "अनुवाद के लिए कोई उपशीर्षक टेक्स्ट नहीं मिला।",
+  subErrNoFile: "कोई फ़ाइल नहीं चल रही है।",
 } satisfies Dict;

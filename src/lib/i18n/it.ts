@@ -157,4 +157,9 @@ export default {
   restartNow: "Riavvia ora",
   restoreDefaultsDesc: "Ripristina tutte le impostazioni ai valori predefiniti.",
   restoredToDefaults: "Ripristinato ai valori predefiniti",
+  subErrImageBased: "Questi sottotitoli sono basati su immagini e non possono essere tradotti.",
+  subErrRateLimited: "Traduzione non riuscita — il servizio è occupato. Riprova tra un momento.",
+  subErrNoTrack: "Nessuna traccia di sottotitoli selezionata.",
+  subErrNoEntries: "Nessun testo di sottotitoli da tradurre.",
+  subErrNoFile: "Nessun file in riproduzione.",
 } satisfies Dict;

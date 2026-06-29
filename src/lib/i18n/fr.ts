@@ -157,4 +157,9 @@ export default {
   restartNow: "Redémarrer maintenant",
   restoreDefaultsDesc: "Réinitialiser tous les paramètres à leurs valeurs par défaut.",
   restoredToDefaults: "Réinitialisé aux valeurs par défaut",
+  subErrImageBased: "Ces sous-titres sont basés sur une image et ne peuvent pas être traduits.",
+  subErrRateLimited: "Échec de la traduction — le service est occupé. Réessayez dans un instant.",
+  subErrNoTrack: "Aucune piste de sous-titres sélectionnée.",
+  subErrNoEntries: "Aucun texte de sous-titres à traduire.",
+  subErrNoFile: "Aucun fichier en lecture.",
 } satisfies Dict;

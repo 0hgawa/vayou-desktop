@@ -146,6 +146,25 @@
   );
   const searchLangLabel = $derived(LANGUAGES.find(([id]) => id === searchLang)?.[1] ?? "All");
 
+  // Localize the backend's English translate error (shown in full, not truncated).
+  const transError = $derived.by(() => {
+    const raw = translate.error;
+    if (!raw) return "";
+    const tr = t();
+    if (raw.includes("image-based")) return tr.subErrImageBased;
+    if (raw.includes("rate-limited") || raw.startsWith("Translation failed")) return tr.subErrRateLimited;
+    if (raw.includes("No subtitle track")) return tr.subErrNoTrack;
+    if (raw.includes("No subtitle entries")) return tr.subErrNoEntries;
+    if (raw.includes("No file")) return tr.subErrNoFile;
+    return raw;
+  });
+  // Auto-dismiss the error after a few seconds (there's also a manual × button).
+  $effect(() => {
+    if (!translate.error) return;
+    const id = setTimeout(() => { translate.error = ""; }, 8000);
+    return () => clearTimeout(id);
+  });
+
   async function refresh() {
     try {
       const all = await getTracks();
@@ -194,6 +213,17 @@
     setSubtitleDelay(0);
   }
 </script>
+
+{#snippet transErrorBox()}
+  {#if transError}
+    <div class="px-3 pb-1.5 flex items-start gap-2">
+      <span class="flex-1 text-red-400 text-[11px] leading-snug">{transError}</span>
+      <button class="shrink-0 text-red-400/70 hover:text-red-400 leading-none mt-0.5" title={t().close} onclick={() => (translate.error = "")} aria-label={t().close}>
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
+  {/if}
+{/snippet}
 
 {#if visible}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -274,9 +304,7 @@
         {/if}
       </button>
 
-      {#if translate.error}
-        <div class="px-3 pb-1 text-red-400 text-[11px] truncate" title={translate.error}>{translate.error}</div>
-      {/if}
+      {@render transErrorBox()}
 
       <!-- Customization (style) -->
       <button
@@ -397,9 +425,7 @@
           <span class="w-3.5 h-3.5 ml-2 border-2 border-white/20 border-t-accent rounded-full animate-spin"></span>
         {/if}
       </div>
-      {#if translate.error}
-        <div class="px-3 pb-1 text-red-400 text-[11px] truncate" title={translate.error}>{translate.error}</div>
-      {/if}
+      {@render transErrorBox()}
       <div class="flex-1 overflow-y-auto">
         <button
           class="w-full flex items-center gap-3 px-3 py-2 hover:bg-white/8 disabled:opacity-50 text-left {translateOff ? 'text-accent' : 'text-white/60'}"

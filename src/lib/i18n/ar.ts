@@ -157,4 +157,9 @@ export default {
   restartNow: "إعادة التشغيل الآن",
   restoreDefaultsDesc: "إعادة تعيين كل الإعدادات إلى قيمها الافتراضية.",
   restoredToDefaults: "تمت الاستعادة إلى الإعدادات الافتراضية",
+  subErrImageBased: "هذه الترجمة قائمة على الصور ولا يمكن ترجمتها.",
+  subErrRateLimited: "فشلت الترجمة — الخدمة مشغولة. أعد المحاولة بعد لحظات.",
+  subErrNoTrack: "لم يتم تحديد أي مسار ترجمة.",
+  subErrNoEntries: "لم يُعثر على نص ترجمة لترجمته.",
+  subErrNoFile: "لا يوجد ملف قيد التشغيل.",
 } satisfies Dict;

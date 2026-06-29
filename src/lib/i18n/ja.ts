@@ -157,4 +157,9 @@ export default {
   restartNow: "今すぐ再起動",
   restoreDefaultsDesc: "すべての設定を既定値に戻します。",
   restoredToDefaults: "既定値に戻しました",
+  subErrImageBased: "この字幕は画像ベースのため翻訳できません。",
+  subErrRateLimited: "翻訳に失敗しました — サービスが混雑しています。しばらくして再試行してください。",
+  subErrNoTrack: "字幕トラックが選択されていません。",
+  subErrNoEntries: "翻訳する字幕テキストが見つかりません。",
+  subErrNoFile: "再生中のファイルがありません。",
 } satisfies Dict;

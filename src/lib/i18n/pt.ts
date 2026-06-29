@@ -157,4 +157,9 @@ export default {
   restartNow: "Reiniciar agora",
   restoreDefaultsDesc: "Redefinir todas as configurações para o padrão.",
   restoredToDefaults: "Restaurado ao padrão",
+  subErrImageBased: "Estas legendas são baseadas em imagem e não podem ser traduzidas.",
+  subErrRateLimited: "Falha na tradução — o serviço está ocupado. Tente novamente em instantes.",
+  subErrNoTrack: "Nenhuma faixa de legenda selecionada.",
+  subErrNoEntries: "Nenhum texto de legenda encontrado para traduzir.",
+  subErrNoFile: "Nenhum arquivo em reprodução.",
 } satisfies Dict;
