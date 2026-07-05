@@ -5,18 +5,17 @@
   let visible = $state(false);
   let timer: ReturnType<typeof setTimeout> | null = null;
   // Plain (non-reactive) so updating it inside the effect doesn't re-trigger it.
-  let last = { v: player.volume, m: player.muted };
+  let lastTick = player.volumeOsdTick;
 
-  // Briefly show the level whenever the volume or mute state changes (e.g. via
-  // the keyboard/scroll), so tweaks are visible even with the controls hidden.
-  // Each change resets the countdown; suppressed before a file plays.
+  // Briefly show the level when the USER changes volume/mute (each such action
+  // bumps `volumeOsdTick`), so tweaks are visible even with the controls hidden.
+  // Driven by the tick — not `volume` — so mpv's own volume echoes on load
+  // don't pop the OSD. Each change resets the countdown; hidden before a file.
   $effect(() => {
-    const v = player.volume;
-    const m = player.muted;
-    const d = player.duration;
-    if (v === last.v && m === last.m) return;
-    last = { v, m };
-    if (d <= 0) return;
+    const tick = player.volumeOsdTick;
+    if (tick === lastTick) return;
+    lastTick = tick;
+    if (player.duration <= 0) return;
     visible = true;
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => (visible = false), 1200);

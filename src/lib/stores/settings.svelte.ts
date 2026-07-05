@@ -29,11 +29,12 @@ export interface SubtitleStyleSettings {
   border_size: number;
   position: number;
   bold: boolean;
+  shadow: number;
 }
 
 const defaultSubStyle: SubtitleStyleSettings = {
   font: "Segoe UI", size: 55, color: "#ffffff",
-  border_color: "#000000", border_size: 3, position: 100, bold: false,
+  border_color: "#000000", border_size: 3, position: 100, bold: false, shadow: 0,
 };
 
 class SettingsStore {
@@ -59,6 +60,7 @@ class SettingsStore {
   subBorderSize = $state(3);
   subPosition = $state(100);
   subBold = $state(false);
+  subShadow = $state(0);
 
   #loaded = false;
   #saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -86,6 +88,7 @@ class SettingsStore {
       this.subBorderSize = s.subtitle_style.border_size;
       this.subPosition = s.subtitle_style.position;
       this.subBold = s.subtitle_style.bold ?? false;
+      this.subShadow = s.subtitle_style.shadow ?? 0;
       keybindings.loadFrom(s.keybindings ?? {});
       setLocale(s.language);
       this.#loaded = true;
@@ -104,7 +107,7 @@ class SettingsStore {
     setSubStyle({
       font: this.subFont, size: this.subSize, color: this.subColor,
       border_color: this.subBorderColor, border_size: this.subBorderSize,
-      position: this.subPosition, bold: this.subBold,
+      position: this.subPosition, bold: this.subBold, shadow: this.subShadow,
     });
     this.save();
   }
@@ -117,6 +120,7 @@ class SettingsStore {
     this.subBorderSize = defaultSubStyle.border_size;
     this.subPosition = defaultSubStyle.position;
     this.subBold = false;
+    this.subShadow = defaultSubStyle.shadow;
     this.applySubStyle();
   }
 
@@ -153,7 +157,7 @@ class SettingsStore {
       subtitle_style: {
         font: this.subFont, size: this.subSize, color: this.subColor,
         border_color: this.subBorderColor, border_size: this.subBorderSize,
-        position: this.subPosition, bold: this.subBold,
+        position: this.subPosition, bold: this.subBold, shadow: this.subShadow,
       },
     };
   }

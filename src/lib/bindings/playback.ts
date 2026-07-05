@@ -7,7 +7,7 @@ export const play = () => invoke<void>("play");
 export const pause = () => invoke<void>("pause");
 export const stop = () => invoke<void>("stop");
 export const seekRelative = (seconds: number) => invoke<void>("seek_relative", { seconds });
-export const seekAbsolute = (seconds: number) => invoke<void>("seek_absolute", { seconds });
+export const seekAbsolute = (seconds: number, exact: boolean) => invoke<void>("seek_absolute", { seconds, exact });
 export const setVolume = (volume: number) => invoke<void>("set_volume", { volume });
 export const setSpeed = (speed: number) => invoke<void>("set_speed", { speed });
 

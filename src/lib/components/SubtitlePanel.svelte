@@ -11,6 +11,17 @@
 
   let { visible = $bindable(false) }: { visible: boolean } = $props();
 
+  // Reset button confirmation: briefly swap the circular icon to a check on
+  // click, so a reset that changes nothing still reads as "done".
+  let styleResetDone = $state(false);
+  let styleResetTimer: ReturnType<typeof setTimeout> | null = null;
+  function resetStyle() {
+    settings.resetSubStyle();
+    styleResetDone = true;
+    if (styleResetTimer) clearTimeout(styleResetTimer);
+    styleResetTimer = setTimeout(() => (styleResetDone = false), 800);
+  }
+
   // Mirrors mobile LANGUAGES list (OnlineSubtitleSearchView.kt)
   const LANGUAGES: Array<[string, string]> = [
     ["", "All"],
@@ -334,7 +345,9 @@
         <button class="ctrl-btn w-6 h-6 text-xs mr-2 hover:bg-white/10 rounded-md" onclick={() => page = "main"}>←</button>
         <span class="font-medium text-xs">{t().style}</span>
         <div class="flex-1"></div>
-        <button class="text-xs text-white/40 hover:text-white/70" onclick={() => settings.resetSubStyle()}>{t().reset}</button>
+        <button class="ctrl-btn w-6 h-6 hover:bg-white/10 rounded-md text-white/40 hover:text-white/70" onclick={resetStyle} title={t().reset} aria-label={t().reset}>
+          <svg class="w-4 h-4 {styleResetDone ? 'text-accent' : ''}" fill="currentColor" viewBox="0 0 24 24">{@html styleResetDone ? ICONS.check : ICONS.refresh}</svg>
+        </button>
       </div>
 
       <!-- Style controls -->
@@ -385,6 +398,14 @@
             <span class="text-white/50 text-xs tabular-nums">{settings.subBorderSize}</span>
           </div>
           <input type="range" min="0" max="10" bind:value={settings.subBorderSize} oninput={() => settings.applySubStyle()} class="s-range w-full" style="--val: {(settings.subBorderSize / 10) * 100}%" />
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-white/50 text-xs">{t().shadow}</span>
+            <span class="text-white/50 text-xs tabular-nums">{settings.subShadow}</span>
+          </div>
+          <input type="range" min="0" max="10" bind:value={settings.subShadow} oninput={() => settings.applySubStyle()} class="s-range w-full" style="--val: {(settings.subShadow / 10) * 100}%" />
         </div>
 
         <div>

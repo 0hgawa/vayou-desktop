@@ -16,24 +16,29 @@
     }
   });
 
-  function handleSeek(e: MouseEvent) {
+  let pendingTime = 0;
+
+  // Keyframe seek while dragging (fast), exact seek on release (precise).
+  function handleSeek(e: MouseEvent, exact: boolean) {
     if (!trackEl || player.duration <= 0) return;
     const rect = trackEl.getBoundingClientRect();
     const fraction = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const time = fraction * player.duration;
-    player.currentTime = time;
-    seekAbsolute(time);
+    pendingTime = fraction * player.duration;
+    player.currentTime = pendingTime;
+    seekAbsolute(pendingTime, exact);
   }
 
   function onMouseDown(e: MouseEvent) {
     seeking = true;
-    handleSeek(e);
+    handleSeek(e, false);
   }
   function onMouseMove(e: MouseEvent) {
-    if (seeking) handleSeek(e);
+    if (seeking) handleSeek(e, false);
   }
   function onMouseUp() {
+    if (!seeking) return;
     seeking = false;
+    seekAbsolute(pendingTime, true);
   }
 </script>
 

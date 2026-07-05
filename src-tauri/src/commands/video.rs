@@ -23,12 +23,6 @@ pub async fn set_saturation(value: i64, state: State<'_, MpvState>) -> Result<()
 }
 
 #[tauri::command]
-pub async fn toggle_deinterlace(state: State<'_, MpvState>) -> Result<(), AppError> {
-    VideoService::toggle_deinterlace(state.get()?)?;
-    Ok(())
-}
-
-#[tauri::command]
 pub async fn set_video_zoom(value: f64, state: State<'_, MpvState>) -> Result<(), AppError> {
     VideoService::set_zoom(state.get()?, value)?;
     Ok(())

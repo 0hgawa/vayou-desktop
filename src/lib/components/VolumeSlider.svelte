@@ -17,11 +17,13 @@
     setVolume(vol);
     player.volume = vol;
     player.muted = vol === 0;
+    player.pulseVolumeOsd();
   }
 
   function toggleMute() {
     player.muted = !player.muted;
     setVolume(player.muted ? 0 : player.volume || 100);
+    player.pulseVolumeOsd();
   }
 
   const fillPct = $derived(player.muted ? 0 : (player.volume / maxVol) * 100);

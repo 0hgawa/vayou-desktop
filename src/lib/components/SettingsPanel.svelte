@@ -1,9 +1,8 @@
 <script lang="ts">
-  import { setBrightness, setContrast, setSaturation, setVideoZoom, resetVideoZoomPan, toggleDeinterlace } from "$lib/bindings/video";
+  import { setBrightness, setContrast, setSaturation, setVideoZoom, resetVideoZoomPan } from "$lib/bindings/video";
   import { setAudioNormalization, setAudioEqualizer, resetAudioEqualizer } from "$lib/bindings/audio-fx";
   import { invoke } from "@tauri-apps/api/core";
   import { settings, subFonts } from "$lib/stores/settings.svelte";
-  import { toast } from "$lib/stores/toast.svelte";
   import { keybindings, KeybindingsStore } from "$lib/stores/keybindings.svelte";
   import { t, setLocale } from "$lib/i18n/index.svelte";
   import { ICONS } from "$lib/icons";
@@ -25,7 +24,6 @@
   let contrast = $state(0);
   let saturation = $state(0);
   let zoom = $state(0);
-  let deinterlace = $state(false);
 
   // Audio state (mirrors mpv)
   let normEnabled = $state(false);
@@ -199,11 +197,16 @@
     else if (updateStatus !== 1 && updateStatus !== 5) checkUpdates();
   }
 
-  // Reset buttons run instantly and confirm via a toast — the standard pattern
-  // for non-destructive resets.
-  function doReset(action: () => void) {
+  // Reset buttons run instantly and confirm in place: the clicked button briefly
+  // shows a check (keyed by `resetDoneKey`), so a reset that changes nothing
+  // still reads as "done".
+  let resetDoneKey = $state<string | null>(null);
+  let resetTimer: ReturnType<typeof setTimeout> | null = null;
+  function doReset(key: string, action: () => void) {
     action();
-    toast.show(t().restoredToDefaults);
+    resetDoneKey = key;
+    if (resetTimer) clearTimeout(resetTimer);
+    resetTimer = setTimeout(() => (resetDoneKey = null), 800);
   }
 
   function handleRebind(e: KeyboardEvent) {
@@ -242,7 +245,7 @@
     data-panel
     role="dialog"
     tabindex="-1"
-    class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-91 w-[620px] max-h-[min(85vh,640px)] bg-surface-container/95 backdrop-blur-md border border-white/10 rounded-lg shadow-2xl text-[13px] text-white/90 flex flex-col select-none overflow-hidden"
+    class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-91 w-[620px] min-h-[min(55vh,380px)] max-h-[min(85vh,640px)] bg-surface-container/95 backdrop-blur-md border border-white/10 rounded-lg shadow-2xl text-[13px] text-white/90 flex flex-col select-none overflow-hidden"
     onclick={(e) => e.stopPropagation()}
     onkeydown={(e) => e.key === "Escape" && close()}
   >
@@ -258,10 +261,13 @@
         <div class="flex-1 h-px bg-white/[0.07]"></div>
         {#if reset}
           <button
-            class="text-[11px] text-white/40 hover:text-white/80 transition-colors shrink-0"
-            onclick={() => doReset(reset)}
+            class="text-[11px] transition-colors shrink-0 inline-flex items-center gap-1 {resetDoneKey === label ? 'text-accent' : 'text-white/40 hover:text-white/80'}"
+            onclick={() => doReset(label, reset)}
           >
             {t().reset}
+            {#if resetDoneKey === label}
+              <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.check}</svg>
+            {/if}
           </button>
         {/if}
       </div>
@@ -371,18 +377,6 @@
             {/snippet}
           </SettingRow>
 
-          <div class="h-px bg-white/[0.06] mx-4 my-2"></div>
-
-          <SettingRow
-            icon={ICONS.tune}
-            title={t().deinterlace}
-            onclick={() => { deinterlace = !deinterlace; toggleDeinterlace(); }}
-          >
-            {#snippet trailing()}
-              <span class="vayou-switch" class:on={deinterlace}></span>
-            {/snippet}
-          </SettingRow>
-
         {:else if tab === "audio"}
           <SettingRow icon={ICONS.volumeUp} title={t().defaultVolume} value="{settings.volume}%">
             {#snippet below()}
@@ -456,10 +450,13 @@
                 {/each}
               </div>
               <button
-                class="text-[11px] text-white/40 hover:text-white/80 transition-colors shrink-0 mt-1.5"
-                onclick={() => doReset(resetEq)}
+                class="text-[11px] transition-colors shrink-0 mt-1.5 inline-flex items-center gap-1 {resetDoneKey === 'eq' ? 'text-accent' : 'text-white/40 hover:text-white/80'}"
+                onclick={() => doReset('eq', resetEq)}
               >
                 {t().reset}
+                {#if resetDoneKey === 'eq'}
+                  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.check}</svg>
+                {/if}
               </button>
             </div>
 
@@ -585,6 +582,18 @@
             {/snippet}
           </SettingRow>
 
+          <SettingRow icon={ICONS.contrast} title={t().shadow} value={String(settings.subShadow)}>
+            {#snippet below()}
+              <input
+                type="range" min="0" max="10"
+                bind:value={settings.subShadow}
+                oninput={() => settings.applySubStyle()}
+                class="s-range w-full"
+                style="--val: {(settings.subShadow / 10) * 100}%"
+              />
+            {/snippet}
+          </SettingRow>
+
           <SettingRow icon={ICONS.alignBottom} title={t().position} value="{settings.subPosition}%">
             {#snippet below()}
               <input
@@ -615,10 +624,13 @@
           {/each}
           <div class="px-4 py-3">
             <button
-              class="w-full py-2 text-xs rounded-md transition-colors text-white/55 hover:text-white/85 bg-white/[0.04] hover:bg-white/[0.08]"
-              onclick={() => doReset(() => { keybindings.resetAll(); settings.save(); })}
+              class="w-full py-2 text-xs rounded-md transition-colors bg-white/[0.04] hover:bg-white/[0.08] inline-flex items-center justify-center gap-1.5 {resetDoneKey === 'shortcuts' ? 'text-accent' : 'text-white/55 hover:text-white/85'}"
+              onclick={() => doReset('shortcuts', () => { keybindings.resetAll(); settings.save(); })}
             >
               {t().resetShortcuts}
+              {#if resetDoneKey === 'shortcuts'}
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.check}</svg>
+              {/if}
             </button>
           </div>
         {:else if tab === "about"}
@@ -671,10 +683,13 @@
                 <div class="text-[11px] text-white/55 mt-0.5">{t().restoreDefaultsDesc}</div>
               </div>
               <button
-                class="px-3 py-1.5 text-xs rounded-md transition-colors shrink-0 bg-white/[0.06] hover:bg-white/[0.10] text-white/85 hover:text-white/95"
-                onclick={() => doReset(resetAll)}
+                class="px-3 py-1.5 text-xs rounded-md transition-colors shrink-0 bg-white/[0.06] hover:bg-white/[0.10] inline-flex items-center gap-1.5 {resetDoneKey === 'restore' ? 'text-accent' : 'text-white/85 hover:text-white/95'}"
+                onclick={() => doReset('restore', resetAll)}
               >
                 {t().restoreDefaults}
+                {#if resetDoneKey === 'restore'}
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">{@html ICONS.check}</svg>
+                {/if}
               </button>
             </div>
           </div>

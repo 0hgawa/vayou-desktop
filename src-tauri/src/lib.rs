@@ -83,7 +83,6 @@ pub fn run() {
             commands::video::set_brightness,
             commands::video::set_contrast,
             commands::video::set_saturation,
-            commands::video::toggle_deinterlace,
             commands::video::set_video_zoom,
             commands::video::set_video_pan,
             commands::video::get_video_zoom_pan,

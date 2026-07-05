@@ -27,5 +27,6 @@ export interface SubStyle {
   border_size: number;
   position: number;
   bold: boolean;
+  shadow: number;
 }
 export const setSubStyle = (style: SubStyle) => invoke<void>("set_sub_style", { style });

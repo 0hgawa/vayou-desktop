@@ -16,6 +16,14 @@ class PlayerStore {
    * triggers spurious effects. */
   fileEpoch = $state(0);
 
+  /** Bumped only by user volume/mute actions to flash the volume OSD. Driven
+   * this way — not off `volume` itself — so mpv's own volume echoes on load
+   * (and the saved level applied on open) don't pop the OSD. */
+  volumeOsdTick = $state(0);
+  pulseVolumeOsd() {
+    this.volumeOsdTick++;
+  }
+
   get progress(): number {
     return this.duration > 0 ? (this.currentTime / this.duration) * 100 : 0;
   }

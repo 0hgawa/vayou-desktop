@@ -78,6 +78,10 @@ impl TracksService {
         mpv.set("sub-border-size", style.border_size as f64)?;
         mpv.set("sub-pos", style.position as f64)?;
         mpv.set::<&str>("sub-bold", if style.bold { "yes" } else { "no" })?;
+        // A plain black drop shadow (offset in pixels; 0 = off). Cheap — mpv
+        // rasterizes it only when the subtitle text changes, not per frame.
+        mpv.set("sub-shadow-offset", style.shadow as f64)?;
+        mpv.set::<&str>("sub-shadow-color", "#000000")?;
         Ok(())
     }
 }
@@ -92,4 +96,6 @@ pub struct SubStyle {
     pub position: u32,
     #[serde(default)]
     pub bold: bool,
+    #[serde(default)]
+    pub shadow: u32,
 }

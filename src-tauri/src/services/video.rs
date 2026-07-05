@@ -18,10 +18,6 @@ impl VideoService {
         mpv.set::<&str>("saturation", &value.to_string())
     }
 
-    pub fn toggle_deinterlace(mpv: &MpvPlayer) -> Result<(), MpvError> {
-        mpv.command(&["cycle", "deinterlace"])
-    }
-
     pub fn set_zoom(mpv: &MpvPlayer, value: f64) -> Result<(), MpvError> {
         mpv.set("video-zoom", value)
     }

@@ -156,8 +156,8 @@ pub async fn seek_relative(seconds: f64, state: State<'_, MpvState>) -> Result<(
 }
 
 #[tauri::command]
-pub async fn seek_absolute(seconds: f64, state: State<'_, MpvState>) -> Result<(), AppError> {
-    PlaybackService::seek_absolute(state.get()?, seconds)?;
+pub async fn seek_absolute(seconds: f64, exact: bool, state: State<'_, MpvState>) -> Result<(), AppError> {
+    PlaybackService::seek_absolute(state.get()?, seconds, exact)?;
     Ok(())
 }
 

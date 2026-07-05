@@ -49,6 +49,8 @@ pub struct SubtitleStyleSettings {
     pub position: u32,
     #[serde(default)]
     pub bold: bool,
+    #[serde(default)]
+    pub shadow: u32,
 }
 
 fn default_lang() -> String { "en".into() }
@@ -63,6 +65,7 @@ impl Default for SubtitleStyleSettings {
             border_size: 3,
             position: 100,
             bold: false,
+            shadow: 0,
         }
     }
 }

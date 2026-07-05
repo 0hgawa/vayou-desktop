@@ -29,8 +29,9 @@ impl PlaybackService {
         mpv.command(&["seek", &seconds.to_string(), "relative"])
     }
 
-    pub fn seek_absolute(mpv: &MpvPlayer, seconds: f64) -> Result<(), MpvError> {
-        mpv.command(&["seek", &seconds.to_string(), "absolute"])
+    pub fn seek_absolute(mpv: &MpvPlayer, seconds: f64, exact: bool) -> Result<(), MpvError> {
+        let mode = if exact { "absolute+exact" } else { "absolute+keyframes" };
+        mpv.command(&["seek", &seconds.to_string(), mode])
     }
 
     pub fn set_volume(mpv: &MpvPlayer, volume: f64) -> Result<(), MpvError> {

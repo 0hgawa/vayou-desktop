@@ -209,9 +209,9 @@
     speedUp: () => { player.speed = Math.min(4, +(player.speed + 0.25).toFixed(2)); setSpeed(player.speed); },
     speedDown: () => { player.speed = Math.max(0.25, +(player.speed - 0.25).toFixed(2)); setSpeed(player.speed); },
     abLoop: () => abLoop.cycle(),
-    volumeUp: () => { player.volume = Math.min(100, player.volume + 5); setVolume(player.volume); },
-    volumeDown: () => { player.volume = Math.max(0, player.volume - 5); setVolume(player.volume); },
-    mute: () => { player.muted = !player.muted; setVolume(player.muted ? 0 : player.volume); },
+    volumeUp: () => { player.volume = Math.min(100, player.volume + 5); setVolume(player.volume); player.pulseVolumeOsd(); },
+    volumeDown: () => { player.volume = Math.max(0, player.volume - 5); setVolume(player.volume); player.pulseVolumeOsd(); },
+    mute: () => { player.muted = !player.muted; setVolume(player.muted ? 0 : player.volume); player.pulseVolumeOsd(); },
     fullscreen: () => toggleFullscreen(),
     screenshot: () => screenshot().then(() => toast.show(t().screenshotSaved)).catch(() => {}),
     aspectRatio: () => cycleRatio(),
@@ -295,7 +295,7 @@
   onmouseenter={handleMouseEnter}
   ondblclick={handleDoubleClick}
   oncontextmenu={handleContextMenu}
-  onwheel={(e) => { if ((e.target as HTMLElement).closest("[data-panel]")) return; e.preventDefault(); const max = settings.volumeBoost ? 200 : 100; player.volume = Math.min(max, Math.max(0, player.volume + (e.deltaY < 0 ? 5 : -5))); setVolume(player.volume); }}
+  onwheel={(e) => { if ((e.target as HTMLElement).closest("[data-panel]")) return; e.preventDefault(); const max = settings.volumeBoost ? 200 : 100; player.volume = Math.min(max, Math.max(0, player.volume + (e.deltaY < 0 ? 5 : -5))); setVolume(player.volume); player.pulseVolumeOsd(); }}
 >
   {#if dragOver}
     <div class="absolute inset-0 z-90 flex items-center justify-center bg-black/60 border-2 border-dashed border-white/30 pointer-events-none">
