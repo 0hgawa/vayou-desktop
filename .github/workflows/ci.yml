@@ -1,0 +1,83 @@
+name: CI
+
+# The quality gate. `release.yml` only fires on a tag, so until now nothing ran
+# on an ordinary commit — a regression surfaced at release time instead of on
+# the commit that introduced it. This runs the checks on every push and PR.
+# Every branch, not just main: the work here lands as direct commits far more
+# often than as pull requests, and a gate that only fires on a PR would sit
+# idle. `pull_request` stays for branches pushed from a fork, which never
+# trigger the push event on this repo.
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+# A new push supersedes the in-flight run for the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # No version input: package.json's packageManager field pins it, and
+      # passing both makes this action abort on the conflict.
+      - uses: pnpm/action-setup@v4
+
+      # 24, not 20: pnpm 11 reaches for node:sqlite and refuses to start below
+      # Node 22.13, and 20 is deprecated on the runners besides.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # No toolchain action on purpose: the version and its components come
+      # from rust-toolchain.toml, so CI compiles with the same compiler as a
+      # developer's machine and the release build. rustup ships on the runner
+      # and materialises it here rather than mid-step.
+      - name: Install the pinned toolchain
+        run: rustup toolchain install
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: pnpm install --frozen-lockfile
+
+      # Types, unused code and a11y across the Svelte frontend.
+      - name: svelte-check
+        run: pnpm check
+
+      # Vitest over the frontend's pure logic (keybinding resolution, track
+      # labels, language names, time formatting).
+      - name: Frontend tests
+        run: pnpm test
+
+      # tauri-build resolves `frontendDist` and the bundle resource globs at
+      # compile time and hard-fails on a glob that matches nothing, so both
+      # paths must exist. The real libmpv-2.dll and ffmpeg.exe (~220 MB) are
+      # only needed to *run* the app: libmpv is loaded at runtime via
+      # libloading and ffmpeg is spawned as a sidecar. Empty placeholders
+      # satisfy the build, which is all lint and test need, and save the
+      # 220 MB download the release workflow has to do.
+      - name: Prepare build inputs
+        shell: pwsh
+        run: |
+          pnpm build
+          New-Item -ItemType Directory -Force src-tauri/binaries | Out-Null
+          New-Item -ItemType File -Force src-tauri/binaries/libmpv-2.dll | Out-Null
+          New-Item -ItemType File -Force src-tauri/binaries/ffmpeg.exe | Out-Null
+
+      # The tree is at zero warnings under pedantic + nursery, so the gate is
+      # blocking: a new warning fails the build instead of scrolling past in a
+      # log. Lints that genuinely do not apply here are allowed in Cargo.toml,
+      # each with the reason next to it — that is the place to add one, not
+      # here.
+      - name: Clippy
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+
+      - name: Tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml

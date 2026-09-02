@@ -1,0 +1,168 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  # Manual trigger (Actions tab → Run workflow) to test a build without
+  # cutting a tag — uploads the installer as a workflow artifact.
+  workflow_dispatch:
+
+permissions:
+  # tauri-action creates the release and uploads assets.
+  contents: write
+  # attest-build-provenance mints a short-lived Sigstore certificate from the
+  # workflow's OIDC identity and records the attestation.
+  id-token: write
+  attestations: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    # The signing secrets are scoped to this environment, not the repository.
+    # Add a required reviewer to it in Settings -> Environments and the job
+    # waits for a human before it can ever reach the key: a stolen token then
+    # is not enough on its own to publish a signed update.
+    environment: release
+    steps:
+      - uses: actions/checkout@v4
+
+      # No version input: package.json's packageManager field pins it, and
+      # passing both makes this action abort on the conflict.
+      - uses: pnpm/action-setup@v4
+
+      # 24, not 20: pnpm 11 reaches for node:sqlite and refuses to start below
+      # Node 22.13, and 20 is deprecated on the runners besides.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # The toolchain comes from rust-toolchain.toml, so the published binary
+      # is built by the same compiler CI linted and tested against — not by
+      # whatever `stable` happened to be on release day.
+      - name: Install the pinned toolchain
+        run: rustup toolchain install
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      # libmpv-2.dll and ffmpeg.exe are not in git (~220 MB combined). CI
+      # fetches them from the deps-v1 prerelease before bundling.
+      - name: Fetch native binaries
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force src-tauri/binaries | Out-Null
+          gh release download deps-v1 --repo ${{ github.repository }} --pattern 'libmpv-2.dll' --pattern 'ffmpeg.exe' --dir src-tauri/binaries
+
+      - run: pnpm install --frozen-lockfile
+
+      - id: tauri
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Only create a real release when triggered by a tag push;
+          # workflow_dispatch just builds and uploads the artifact below.
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
+          releaseName: ${{ startsWith(github.ref, 'refs/tags/') && format('Vayou {0}', github.ref_name) || '' }}
+          releaseDraft: ${{ startsWith(github.ref, 'refs/tags/') }}
+          prerelease: false
+
+      # Verifiable provenance for the bare executable: proves this exact binary
+      # came out of this workflow, at this commit. Independent of the minisign
+      # signature below, which is what the in-app updater checks.
+      - name: Attest build provenance
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: src-tauri/target/release/vayou-desktop.exe
+
+      # The in-app updater (src-tauri/src/services/update.rs) fetches
+      # releases/latest/download/latest.json, then verifies the executable it
+      # points at against the minisign public key compiled into the running
+      # build. Without this step the feed is missing and every installed copy
+      # silently stops updating, so it runs on every tag.
+      #
+      # The secret key stays encrypted at rest: MINISIGN_SECRET_KEY holds the
+      # scrypt-protected key exactly as it lives in .keys/vayou-desktop.key, and
+      # MINISIGN_PASSWORD unlocks it. minisign reads the passphrase from stdin
+      # when stdin is not a terminal, which is what the redirect below relies on
+      # -- there is no --password flag.
+      - name: Sign the executable and publish the update feed
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MINISIGN_SECRET_KEY: ${{ secrets.MINISIGN_SECRET_KEY }}
+          MINISIGN_PASSWORD: ${{ secrets.MINISIGN_PASSWORD }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not $env:MINISIGN_SECRET_KEY) { throw 'MINISIGN_SECRET_KEY is not set' }
+          if (-not $env:MINISIGN_PASSWORD)   { throw 'MINISIGN_PASSWORD is not set' }
+
+          $exe = 'src-tauri/target/release/vayou-desktop.exe'
+          if (-not (Test-Path $exe)) { throw "built executable not found at $exe" }
+
+          # minisign 0.12, pinned. The win64 zip carries both architectures.
+          Invoke-WebRequest 'https://github.com/jedisct1/minisign/releases/download/0.12/minisign-0.12-win64.zip' -OutFile ms.zip
+          Expand-Archive ms.zip -DestinationPath ms -Force
+          $ms = (Get-ChildItem ms -Recurse -Filter minisign.exe | Where-Object FullName -match 'x86_64').FullName
+
+          # Both files land outside the workspace so a later upload glob can
+          # never sweep them into a release asset.
+          $keyFile = Join-Path $env:RUNNER_TEMP 'signing.key'
+          $pwFile  = Join-Path $env:RUNNER_TEMP 'signing.pw'
+          [IO.File]::WriteAllText($keyFile, $env:MINISIGN_SECRET_KEY)
+          [IO.File]::WriteAllText($pwFile,  $env:MINISIGN_PASSWORD + "`r`n")
+
+          try {
+            & cmd /c "`"$ms`" -S -s `"$keyFile`" -m `"$exe`" < `"$pwFile`""
+            if ($LASTEXITCODE -ne 0) { throw "minisign failed with exit $LASTEXITCODE (wrong password?)" }
+          } finally {
+            # Remove the key and passphrase before anything else can read them,
+            # including a failed run's post-mortem steps.
+            Remove-Item $keyFile, $pwFile -Force -ErrorAction SilentlyContinue
+          }
+
+          # update.rs reads `signature` as the whole .minisig text, not just the
+          # base64 line, and compares `version` with semver against the running
+          # build's CARGO_PKG_VERSION.
+          $sig = Get-Content "$exe.minisig" -Raw
+          $tag = '${{ github.ref_name }}'
+          $feed = [ordered]@{
+            version   = $tag.TrimStart('v')
+            platforms = [ordered]@{
+              'windows-x86_64' = [ordered]@{
+                url       = "https://github.com/${{ github.repository }}/releases/download/$tag/vayou-desktop.exe"
+                signature = $sig
+              }
+            }
+          }
+          $feed | ConvertTo-Json -Depth 5 | Set-Content latest.json -Encoding utf8
+
+          # Verify against the very key the app has compiled in, read out of the
+          # source rather than repeated here: a second copy is a second thing to
+          # forget on the next rotation, and the failure it buys is a release
+          # every client rejects.
+          $rs = Get-Content src-tauri/src/services/update.rs -Raw
+          if ($rs -notmatch 'UPDATE_PUBKEY:\s*&str\s*=\s*"([^"]+)"') {
+            throw 'could not read UPDATE_PUBKEY out of update.rs'
+          }
+          $pub = $Matches[1]
+          Write-Host "verifying against UPDATE_PUBKEY $pub"
+          & $ms -V -P $pub -m $exe
+          if ($LASTEXITCODE -ne 0) { throw 'signature does not verify against the embedded public key' }
+
+          gh release upload $tag $exe latest.json --repo ${{ github.repository }} --clobber
+
+      - name: Upload installer as workflow artifact
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: vayou-windows
+          path: src-tauri/target/release/bundle/**/*.exe
+          if-no-files-found: ignore

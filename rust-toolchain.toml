@@ -1,0 +1,16 @@
+# One compiler for local builds, CI and releases.
+#
+# Without this, CI installs whatever `stable` happens to be that week while a
+# developer builds with whatever they installed months ago. Combined with the
+# `-D warnings` Clippy gate in .github/workflows/ci.yml, that turns every new
+# Rust release into a red build on code nobody touched — which is exactly what
+# happened on the gate's first run (local 1.95.0, runner 1.98.0).
+#
+# It also makes release binaries reproducible: the published installer is built
+# by the same compiler that the tests and lints ran against.
+#
+# To bump: raise `channel`, run `cargo clippy --all-targets -- -D warnings`,
+# fix whatever the newer lints find, and commit the two together.
+[toolchain]
+channel = "1.98.0"
+components = ["clippy"]

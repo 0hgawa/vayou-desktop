@@ -1,0 +1,5 @@
+{
+  "bundle": {
+    "resources": ["binaries/*", "icons/file/*.ico"]
+  }
+}

@@ -1,0 +1,8 @@
+allowBuilds:
+  esbuild: true
+
+# @sveltejs/kit pins cookie@0.6.0, which carries GHSA-pxg6-pf52-xh8x (out-of-bounds
+# characters accepted in cookie name/path/domain). Unreachable here — adapter-static
+# ships no server — but pinning forward keeps `pnpm audit` clean.
+overrides:
+  cookie: '^0.7.0'
