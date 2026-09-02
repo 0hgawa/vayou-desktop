@@ -21,16 +21,14 @@ const UPDATE_FEED: &str =
 
 /// minisign public key the downloaded executable must be signed with. The
 /// matching secret key (`.keys/vayou-desktop.key`) signs it in CI, from the
-/// `MINISIGN_SECRET_KEY` / `MINISIGN_PASSWORD` secrets on the `release`
-/// environment.
+/// `MINISIGN_SECRET_KEY` secret on the `release` environment.
 ///
-/// Rotated 2026-09-02: the passphrase for the 0.1.0-0.1.2 key was lost, which
-/// left it unable to sign anything. Builds up to 0.1.2 have the old key
-/// compiled in and will reject anything signed by this one, so they cannot
-/// self-update - `check` reports the failure and the UI offers
-/// `open_release_page` instead, and a manual reinstall puts them back on the
-/// automatic path.
-const UPDATE_PUBKEY: &str = "RWTySXyDoRt4siXTK4Re8+oJdo65JVSw2wlmTeIctXupDtzoolIW9PJ8";
+/// Unchanged since 0.1.0 on purpose: every installed build verifies against
+/// this value, so rotating it strands all of them on a manual reinstall. The
+/// key is rsign-format with an empty passphrase, which is what lets CI sign
+/// without a password secret - the KDF header is present either way, so a
+/// scrypt marker in the key file is not evidence that a passphrase was set.
+const UPDATE_PUBKEY: &str = "RWQZ44cVRYzob680SJHG6MGpWBsknSRubx28ElUU0tcXTQC1QH74X3Mb";
 
 /// A newer release: version, the new executable URL, and its minisign signature.
 /// Round-trips through the frontend between `check` and `install`.

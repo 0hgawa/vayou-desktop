@@ -87,11 +87,11 @@ jobs:
       # build. Without this step the feed is missing and every installed copy
       # silently stops updating, so it runs on every tag.
       #
-      # The secret key stays encrypted at rest: MINISIGN_SECRET_KEY holds the
-      # scrypt-protected key exactly as it lives in .keys/vayou-desktop.key, and
-      # MINISIGN_PASSWORD unlocks it. minisign reads the passphrase from stdin
-      # when stdin is not a terminal, which is what the redirect below relies on
-      # -- there is no --password flag.
+      # MINISIGN_SECRET_KEY holds the key exactly as it lives in
+      # .keys/vayou-desktop.key. Its passphrase is empty, so MINISIGN_PASSWORD is
+      # optional and the redirect below feeds a bare newline when it is unset --
+      # minisign reads the passphrase from stdin whenever stdin is not a
+      # terminal, and there is no --password flag to use instead.
       - name: Sign the executable and publish the update feed
         if: startsWith(github.ref, 'refs/tags/')
         env:
@@ -102,7 +102,6 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           if (-not $env:MINISIGN_SECRET_KEY) { throw 'MINISIGN_SECRET_KEY is not set' }
-          if (-not $env:MINISIGN_PASSWORD)   { throw 'MINISIGN_PASSWORD is not set' }
 
           $exe = 'src-tauri/target/release/vayou-desktop.exe'
           if (-not (Test-Path $exe)) { throw "built executable not found at $exe" }
@@ -117,7 +116,7 @@ jobs:
           $keyFile = Join-Path $env:RUNNER_TEMP 'signing.key'
           $pwFile  = Join-Path $env:RUNNER_TEMP 'signing.pw'
           [IO.File]::WriteAllText($keyFile, $env:MINISIGN_SECRET_KEY)
-          [IO.File]::WriteAllText($pwFile,  $env:MINISIGN_PASSWORD + "`r`n")
+          [IO.File]::WriteAllText($pwFile,  ($env:MINISIGN_PASSWORD ?? '') + "`r`n")
 
           try {
             & cmd /c "`"$ms`" -S -s `"$keyFile`" -m `"$exe`" < `"$pwFile`""

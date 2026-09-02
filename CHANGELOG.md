@@ -7,14 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.3] - 2026-09-02
 
-### Upgrading from 0.1.2 or earlier
-
-The update signing key was rotated in this release, and builds up to 0.1.2 carry
-the previous public key compiled in. They reject anything signed by the new one
-and **cannot update themselves**: the app reports the failure and offers *Open
-releases page*. Download and run the installer once and automatic updates resume
-from there.
-
 ### Added
 
 - Unit tests for the pure logic that had none: subtitle time parsing (SRT and ASS), tag stripping, SRT/ASS block parsing, ASS header extraction, the A–B loop predicate, recent-file bookkeeping, and natural sort ordering. These are the deterministic, edge-case-heavy functions where a silent regression would corrupt a translated subtitle or scramble episode order without ever failing to compile.
@@ -37,13 +29,14 @@ from there.
 
 ### Changed
 
-- **The update signing key was rotated.** The passphrase protecting the key that
-  signed 0.1.0 through 0.1.2 was lost, leaving it unable to sign anything, so a
-  new pair replaces it. Signing now happens in CI from a `release` environment
-  that requires a reviewer's approval before the job can reach the secrets, and
-  the workflow verifies its own signature against the embedded public key before
-  publishing — a mismatch fails the build instead of shipping a feed every
-  client would reject. The release also carries a build provenance attestation.
+- **Releases are signed by CI instead of by hand.** The key moves into a
+  `release` environment that requires a reviewer's approval before the job can
+  reach it, and the workflow verifies its own signature against the public key
+  read out of `update.rs` before publishing — a mismatch now fails the build
+  instead of shipping a feed every client would reject, which is the failure
+  mode that silently breaks self-updates. The release also carries a build
+  provenance attestation. The signing key itself is unchanged since 0.1.0, so
+  every installed build keeps updating normally.
 - Small secondary text across the context menu, playlist, settings and subtitle
   panels moved from 11px to 12px, and the settings card narrowed to 670px.
 - Settings text inputs are an underline rather than a filled box, taking the
