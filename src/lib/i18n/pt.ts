@@ -126,6 +126,7 @@ export default {
   volumeUp: "Aumentar Volume",
   volumeDown: "Diminuir Volume",
   mute: "Mudo",
+  unmute: "Reativar som",
   cycleSub: "Alternar Legendas",
   cycleAudio: "Alternar Áudio",
   shortcuts: "Atalhos",

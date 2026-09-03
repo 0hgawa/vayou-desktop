@@ -126,6 +126,7 @@ export default {
   volumeUp: "Lauter",
   volumeDown: "Leiser",
   mute: "Stumm",
+  unmute: "Ton einschalten",
   cycleSub: "Untertitel Wechseln",
   cycleAudio: "Audiospur Wechseln",
   shortcuts: "Tastenkürzel",

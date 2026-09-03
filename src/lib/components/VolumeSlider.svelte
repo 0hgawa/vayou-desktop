@@ -30,6 +30,11 @@
   const fillPct = $derived(player.muted ? 0 : (player.volume / maxVol) * 100);
   const shownVol = $derived(player.muted ? 0 : Math.round(player.volume));
 
+  /** Nothing is coming out, whether the mute flag is set or the slider is at
+   * zero. Both the icon and the button's label follow this rather than
+   * `player.muted` alone, so neither can describe a state the other denies. */
+  const silent = $derived(player.muted || player.volume === 0);
+
   /** Keyboard operation, matching the global volume shortcuts (±5). Stops
    * propagation because the same arrows are bound on `<svelte:window>`, which
    * would otherwise apply the step a second time. */
@@ -59,15 +64,17 @@
 <!-- Icon + slider as one unit: the hover pill wraps both (YouTube-style),
      so the highlight and expansion cover the whole control, not just the icon. -->
 <div class="flex items-center group h-9 rounded-full transition-colors hover:bg-white/[0.12]">
+  <!-- The label names what the click will do, not what the state is: the button
+       said "Mute" while already muted, which is the one moment it is wrong. -->
   <button
     onclick={toggleMute}
     class="vol-btn w-9 h-9 shrink-0 flex items-center justify-center text-white/85 hover:text-white transition-colors"
-    aria-label={t().mute}
+    aria-label={silent ? t().unmute : t().mute}
     aria-pressed={player.muted}
-    title={t().mute}
+    title={silent ? t().unmute : t().mute}
   >
     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-      {@html player.muted || player.volume === 0 ? ICONS.volumeOff : ICONS.volumeUp}
+      {@html silent ? ICONS.volumeOff : ICONS.volumeUp}
     </svg>
   </button>
 

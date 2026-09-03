@@ -125,6 +125,7 @@ export default {
   volumeUp: "Volume Up",
   volumeDown: "Volume Down",
   mute: "Mute",
+  unmute: "Unmute",
   cycleSub: "Cycle Subtitles",
   cycleAudio: "Cycle Audio",
   shortcuts: "Shortcuts",

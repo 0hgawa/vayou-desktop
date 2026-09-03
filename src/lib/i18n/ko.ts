@@ -126,6 +126,7 @@ export default {
   volumeUp: "음량 높이기",
   volumeDown: "음량 낮추기",
   mute: "음소거",
+  unmute: "음소거 해제",
   cycleSub: "자막 전환",
   cycleAudio: "오디오 전환",
   shortcuts: "단축키",

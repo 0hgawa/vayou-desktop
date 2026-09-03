@@ -126,6 +126,7 @@ export default {
   volumeUp: "增大音量",
   volumeDown: "减小音量",
   mute: "静音",
+  unmute: "取消静音",
   cycleSub: "切换字幕",
   cycleAudio: "切换音频",
   shortcuts: "快捷键",

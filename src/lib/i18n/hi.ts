@@ -126,6 +126,7 @@ export default {
   volumeUp: "आवाज़ बढ़ाएँ",
   volumeDown: "आवाज़ घटाएँ",
   mute: "म्यूट",
+  unmute: "अनम्यूट करें",
   cycleSub: "उपशीर्षक बदलें",
   cycleAudio: "ऑडियो बदलें",
   shortcuts: "शॉर्टकट",

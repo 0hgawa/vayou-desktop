@@ -126,6 +126,7 @@ export default {
   volumeUp: "رفع الصوت",
   volumeDown: "خفض الصوت",
   mute: "كتم الصوت",
+  unmute: "إلغاء الكتم",
   cycleSub: "تبديل الترجمات",
   cycleAudio: "تبديل الصوت",
   shortcuts: "اختصارات",

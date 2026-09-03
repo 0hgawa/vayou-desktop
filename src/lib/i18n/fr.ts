@@ -126,6 +126,7 @@ export default {
   volumeUp: "Augmenter le Volume",
   volumeDown: "Baisser le Volume",
   mute: "Muet",
+  unmute: "Réactiver le son",
   cycleSub: "Changer les Sous-titres",
   cycleAudio: "Changer la Piste Audio",
   shortcuts: "Raccourcis",

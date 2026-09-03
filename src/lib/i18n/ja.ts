@@ -126,6 +126,7 @@ export default {
   volumeUp: "音量を上げる",
   volumeDown: "音量を下げる",
   mute: "ミュート",
+  unmute: "ミュート解除",
   cycleSub: "字幕を切り替え",
   cycleAudio: "音声を切り替え",
   shortcuts: "ショートカット",
